@@ -32,7 +32,7 @@ set(THIS_UNITTESTS "${THIS_PROJECT_NAME}_unittests")
 set(utest_cmd ${CMAKE_CTEST_COMMAND} --force-new-ctest-process --output-on-failure)
 add_custom_target(${THIS_UNITTESTS}
     ALL
-    COMMAND ${utest_cmd}
+#    COMMAND ${utest_cmd}
     )
 
 add_subdirectory (c++)
