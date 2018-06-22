@@ -22,7 +22,7 @@ The package can be installed using [BIOCONDA](https://bioconda.github.io/) recip
 ```
 conda install -c vasupsu sprite4
 ```
-The current recipe does not install Strelka2. We are working on this and we'll update the recipe soon.
+The current recipe does not install Strelka2. We are working on this and we'll update the recipe for Strelka2 and provide test scripts and run instructions soon.
 
 ##References
 1. Li, H. (2018). [Minimap2: pairwise alignment for nucleotide sequences]{https://academic.oup.com/bioinformatics/advance-article/doi/10.1093/bioinformatics/bty191/4994778}. Bioinformatics. doi:10.1093/bioinformatics/bty191
