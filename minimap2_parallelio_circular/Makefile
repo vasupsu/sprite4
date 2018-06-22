@@ -1,4 +1,4 @@
-CFLAGS=		-g -Wall -O2 -fopenmp -DUSE_MPI
+CFLAGS=		-g -Wall -O2 -Wc++-compat -fopenmp -DUSE_MPI
 CPPFLAGS=	-DHAVE_KALLOC
 INCLUDES=
 OBJS=		kthread.o kalloc.o misc.o bseq.o sketch.o sdust.o index.o chain.o align.o hit.o map.o format.o pe.o esterr.o ksw2_ll_sse.o
@@ -24,10 +24,12 @@ endif
 .c.o:
 		$(CC) -c $(CFLAGS) $(CPPFLAGS) $(INCLUDES) $< -o $@
 
-all:$(PROG)
+all:$(PROG)  genFastqIdx_paired
 
 extra:all $(PROG_EXTRA)
 
+genFastqIdx_paired: genFastqIdx_paired.c
+		$(CC) $(CFLAGS) -o genFastqIdx_paired genFastqIdx_paired.c
 minimap2:main.o getopt.o libminimap2.a
 		$(CC) $(CFLAGS) main.o getopt.o -o $@ -L. -lminimap2 $(LIBS)
 
