@@ -139,7 +139,7 @@ struct HtsMergeStreamer
         const std::string& bamFilename,
         const unsigned index, int rank, int numTasks)
     {
-        std::cout << "registerBam_rank" << std::endl;
+//        std::cout << "registerBam_rank" << std::endl;
         return registerHtsType(bamFilename, index,_data._bam, rank, numTasks);
     }
 
@@ -312,7 +312,6 @@ private:
         int rank, int numTasks,
         const bool isRequireNormalized = false)
     {
-        std::cout << "In registerHtsType_rank " << std::endl;
         static const HTS_TYPE::index_t htsType(HTS_TYPE::getStreamType<T>());
         assert(! _isStreamBegin);
         const unsigned htsTypeIndex(htsStreamerVec.size());

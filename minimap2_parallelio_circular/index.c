@@ -248,7 +248,10 @@ static void *worker_pipeline(void *shared, int step, void *in)
         step_t *s;
 		if (p->sum_len > p->batch_size) return 0;
         s = (step_t*)calloc(1, sizeof(step_t));
-		s->seq = mm_bseq_read(p->fp, p->mini_batch_size, 0, &s->n_seq, UINT64_MAX); // read a mini-batch
+		#pragma omp critical (read_lock)
+		{
+			s->seq = mm_bseq_read(p->fp, p->mini_batch_size, 0, &s->n_seq, UINT64_MAX); // read a mini-batch
+		}
 		if (s->seq) {
 			uint32_t old_m, m;
 			assert((uint64_t)p->mi->n_seq + s->n_seq <= UINT32_MAX); // to prevent integer overflow
@@ -295,19 +298,25 @@ static void *worker_pipeline(void *shared, int step, void *in)
 		} else free(s);
     } else if (step == 1) { // step 1: compute sketch
         step_t *s = (step_t*)in;
-		for (i = 0; i < s->n_seq; ++i) {
-			mm_bseq1_t *t = &s->seq[i];
-			if (t->l_seq > 0)
-				mm_sketch(0, t->seq, t->l_seq, p->mi->w, p->mi->k, t->rid, p->mi->flag&MM_I_HPC, &s->a);
-			else if (mm_verbose >= 2)
-				fprintf(stderr, "[WARNING] the length database sequence '%s' is 0\n", t->name);
-			free(t->seq); free(t->name);
+		#pragma omp critical (comp_lock)
+		{
+			for (i = 0; i < s->n_seq; ++i) {
+				mm_bseq1_t *t = &s->seq[i];
+				if (t->l_seq > 0)
+					mm_sketch(0, t->seq, t->l_seq, p->mi->w, p->mi->k, t->rid, p->mi->flag&MM_I_HPC, &s->a);
+				else if (mm_verbose >= 2)
+					fprintf(stderr, "[WARNING] the length database sequence '%s' is 0\n", t->name);
+				free(t->seq); free(t->name);
+			}
 		}
 		free(s->seq); s->seq = 0;
 		return s;
     } else if (step == 2) { // dispatch sketch to buckets
         step_t *s = (step_t*)in;
-		mm_idx_add(p->mi, s->a.n, s->a.a);
+		#pragma omp critical (comp_lock)
+		{
+			mm_idx_add(p->mi, s->a.n, s->a.a);
+		}
 		kfree(0, s->a.a); free(s);
 	}
     return 0;

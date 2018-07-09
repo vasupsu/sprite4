@@ -105,7 +105,7 @@ endif ()
 # (1) can you find boost >= min_version at all?
 # (2) if so, does that boost version include all of our required components?
 #
-#find_package(Boost ${THIS_BOOST_VERSION})
+find_package(Boost ${THIS_BOOST_VERSION})
 if (Boost_FOUND)
     find_package(Boost ${THIS_BOOST_VERSION} COMPONENTS ${THIS_BOOST_COMPONENTS} QUIET)
 endif ()

@@ -76,6 +76,8 @@ starling_streams(
     if (opt.gvcf.is_gvcf_output())
     {
         const std::string gvcfVariantsPath(opt.gvcf.outputPrefix+"variants."+std::to_string(rank)+".vcf");
+//	if (rank > 0)
+//            opt.gvcf.is_skip_header = true;
         _gvcfVariantsStreamPtr.reset(initialize_gvcf_file(opt, pinfo, gvcfVariantsPath, "variants", referenceHeader));
         const unsigned sampleCount(getSampleCount());
         for (unsigned sampleIndex(0); sampleIndex < sampleCount; ++sampleIndex)

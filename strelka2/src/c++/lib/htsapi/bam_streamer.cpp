@@ -43,9 +43,9 @@ bam_streamer(
     : _is_record_set(false),
       _hfp(nullptr),
       _aeb_fp(NULL), _aib_fp(NULL), fR(NULL), oR(NULL),
-//      curTid(-1), curData(NULL), curBamRec (NULL), totalSegments(500), numOutChunks(0), numMaxChunks(0), maxChunkSize(0), aebaib_prefix("/scratch/03201/tg824998/ERR091571/opFiles/tmp1N_0"), startFile (-1), cur_aeb_rec (-1), total_aeb_rec (-1), endFile (-1), cur_aib_rec (-1), total_aib_rec (-1),
+      curTid(-1), curData(NULL), curBamRec (NULL), totalSegments(500), numOutChunks(0), numMaxChunks(0), maxChunkSize(0), aebaib_prefix("/gpfs/scratch/vxr162/ERR091571/opFiles/tmp1N_0"), startFile (-1), cur_aeb_rec (-1), total_aeb_rec (-1), endFile (-1), cur_aib_rec (-1), total_aib_rec (-1),
 //      curTid(-1), curData(NULL), curBamRec (NULL), totalSegments(500), numOutChunks(0), numMaxChunks(0), maxChunkSize(0), aebaib_prefix("/scratch/03201/tg824998/ERR194147/opFiles/tmp1N_0"), startFile (-1), cur_aeb_rec (-1), total_aeb_rec (-1), endFile (-1), cur_aib_rec (-1), total_aib_rec (-1),
-      curTid(-1), curData(NULL), curBamRec (NULL), totalSegments(500), numOutChunks(0), numMaxChunks(0), maxChunkSize(0), aebaib_prefix("/scratch/03201/tg824998/Venter/opFiles/tmp1N_0"), startFile (-1), cur_aeb_rec (-1), total_aeb_rec (-1), endFile (-1), cur_aib_rec (-1), total_aib_rec (-1),
+//      curTid(-1), curData(NULL), curBamRec (NULL), totalSegments(500), numOutChunks(0), numMaxChunks(0), maxChunkSize(0), aebaib_prefix("/scratch/03201/tg824998/Venter/opFiles/tmp1N_0"), startFile (-1), cur_aeb_rec (-1), total_aeb_rec (-1), endFile (-1), cur_aib_rec (-1), total_aib_rec (-1),
 //      curTid(-1), curData(NULL), curBamRec (NULL), totalSegments(500), numOutChunks(0), numMaxChunks(0), maxChunkSize(0), aebaib_prefix("/scratch/03201/tg824998/ERR194147/opFiles/parsnip_out"), startFile (-1), cur_aeb_rec (-1), total_aeb_rec (-1), endFile (-1), cur_aib_rec (-1), total_aib_rec (-1),
 //      curTid(-1), curData(NULL), curBamRec (NULL), totalSegments(500), numOutChunks(0), numMaxChunks(0), maxChunkSize(0), aebaib_prefix("/scratch/03201/tg824998/ERR091571/opFiles/parsnip_out"), startFile (-1), cur_aeb_rec (-1), total_aeb_rec (-1), endFile (-1), cur_aib_rec (-1), total_aib_rec (-1),
 //      curTid(-1), curData(NULL), curBamRec (NULL), totalSegments(500), numOutChunks(0), numMaxChunks(0), maxChunkSize(0), aebaib_prefix("/scratch/03201/tg824998/Venter/opFiles/parsnip_out"), startFile (-1), cur_aeb_rec (-1), total_aeb_rec (-1), endFile (-1), cur_aib_rec (-1), total_aib_rec (-1),
@@ -88,9 +88,8 @@ bam_streamer(
     curData = (uint8_t *)malloc (20000 * sizeof(uint8_t));
     assert (curData != NULL);
     curBamRec = bam_init1();
-    std::cout << "BAM streamer constructor" << std::endl;
+//    std::cout << "BAM streamer constructor" << std::endl;
     split_fasta ();
-    split_aebaib2 ();
     if (nullptr == region)
     {
         // setup to read the whole BAM file by default if resetRegion() is not called:
@@ -104,6 +103,7 @@ bam_streamer(
     }
     else
     {
+        split_aebaib2 ();
 	std::cout << "Region " << region << std::endl;
         // read a specific region of the bam file:
         resetRegion(region);
@@ -119,9 +119,9 @@ bam_streamer(
     : _is_record_set(false),
       _hfp(nullptr),
       _aeb_fp(NULL), _aib_fp(NULL), fR(NULL), oR(NULL),
-//      curTid(-1), curData(NULL), curBamRec (NULL), totalSegments(500), numOutChunks(0), numMaxChunks(0), maxChunkSize(0), aebaib_prefix("/scratch/03201/tg824998/ERR091571/opFiles/tmp1N_0"), startFile (-1), cur_aeb_rec (-1), total_aeb_rec (-1), endFile (-1), cur_aib_rec (-1), total_aib_rec (-1), rank(r), numTasks(numTasks),
+      curTid(-1), curData(NULL), curBamRec (NULL), totalSegments(500), numOutChunks(0), numMaxChunks(0), maxChunkSize(0), aebaib_prefix("/gpfs/scratch/vxr162/ERR091571/opFiles/tmp1N_0"), startFile (-1), cur_aeb_rec (-1), total_aeb_rec (-1), endFile (-1), cur_aib_rec (-1), total_aib_rec (-1), rank(r), numTasks(numTasks),
 //      curTid(-1), curData(NULL), curBamRec (NULL), totalSegments(500), numOutChunks(0), numMaxChunks(0), maxChunkSize(0), aebaib_prefix("/scratch/03201/tg824998/ERR194147/opFiles/tmp1N_0"), startFile (-1), cur_aeb_rec (-1), total_aeb_rec (-1), endFile (-1), cur_aib_rec (-1), total_aib_rec (-1), rank(r), numTasks(numTasks),
-      curTid(-1), curData(NULL), curBamRec (NULL), totalSegments(500), numOutChunks(0), numMaxChunks(0), maxChunkSize(0), aebaib_prefix("/scratch/03201/tg824998/Venter/opFiles/tmp1N_0"), startFile (-1), cur_aeb_rec (-1), total_aeb_rec (-1), endFile (-1), cur_aib_rec (-1), total_aib_rec (-1), rank(r), numTasks(numTasks),
+//      curTid(-1), curData(NULL), curBamRec (NULL), totalSegments(500), numOutChunks(0), numMaxChunks(0), maxChunkSize(0), aebaib_prefix("/scratch/03201/tg824998/Venter/opFiles/tmp1N_0"), startFile (-1), cur_aeb_rec (-1), total_aeb_rec (-1), endFile (-1), cur_aib_rec (-1), total_aib_rec (-1), rank(r), numTasks(numTasks),
 //      curTid(-1), curData(NULL), curBamRec (NULL), totalSegments(500), numOutChunks(0), numMaxChunks(0), maxChunkSize(0), aebaib_prefix("/scratch/03201/tg824998/ERR194147/opFiles/parsnip_out"), startFile (-1), cur_aeb_rec (-1), total_aeb_rec (-1), endFile (-1), cur_aib_rec (-1), total_aib_rec (-1), rank(r), numTasks(numTasks),
 //      curTid(-1), curData(NULL), curBamRec (NULL), totalSegments(500), numOutChunks(0), numMaxChunks(0), maxChunkSize(0), aebaib_prefix("/scratch/03201/tg824998/ERR091571/opFiles/parsnip_out"), startFile (-1), cur_aeb_rec (-1), total_aeb_rec (-1), endFile (-1), cur_aib_rec (-1), total_aib_rec (-1), rank(r), numTasks(numTasks),
 //      curTid(-1), curData(NULL), curBamRec (NULL), totalSegments(500), numOutChunks(0), numMaxChunks(0), maxChunkSize(0), aebaib_prefix("/scratch/03201/tg824998/Venter/opFiles/parsnip_out"), startFile (-1), cur_aeb_rec (-1), total_aeb_rec (-1), endFile (-1), cur_aib_rec (-1), total_aib_rec (-1), rank(r), numTasks(numTasks),
@@ -164,7 +164,7 @@ bam_streamer(
     curData = (uint8_t *)malloc (20000 * sizeof(uint8_t));
     assert (curData != NULL);
     curBamRec = bam_init1();
-    std::cout << "BAM streamer constructor" << std::endl;
+//    std::cout << "BAM streamer constructor" << std::endl;
     split_fasta ();
 //    split_aebaib2 ();
     split_aebaib3 ();
@@ -760,7 +760,7 @@ size_t bam_streamer::getFirstRecordIndexForRange (FILE *fp, int isaibfile, size_
     }
     if (l != 0)
     {
-       std::cout << "l,m,h: " << l << "(" << prevpos << ")"  << "," << m << "(" << mpos << ")" << "," << h << "(" << nextpos << ")" << " lastElem " << lastrec << " key " << key << std::endl;
+//       std::cout << "l,m,h: " << l << "(" << prevpos << ")"  << "," << m << "(" << mpos << ")" << "," << h << "(" << nextpos << ")" << " lastElem " << lastrec << " key " << key << std::endl;
     }
     assert ((l==0) || (l==(lastrec+1)));
     return l;
@@ -780,7 +780,7 @@ resetRegion(const char* region)
         curTid = referenceContigId;
         curStart = beginPos;
         curEnd = endPos;
-//        std::cout << "curTid " << curTid << std::endl;
+//        std::cout << "curTid " << curTid << " beginPos " << beginPos << " endPos " << endPos <<  std::endl;
 	
 	startFile = beginPos / maxChunkSize;
 	endFile = endPos / maxChunkSize;
@@ -798,6 +798,7 @@ resetRegion(const char* region)
         cur_aeb_rec = cur_aib_rec = 0;
         total_aeb_rec = total_aib_rec = 0;
 
+//        std::cout << "startFile " << startFile << " endFile " << endFile <<  std::endl;
 	while (startFile <= endFile)
         {
             char fname[10000];
@@ -831,7 +832,7 @@ resetRegion(const char* region)
             }
             if (firstRecordOfs == numRecs)
             {
-                std::cout << feof(_aeb_fp) << total_aeb_rec << "****\n";
+//                std::cout << feof(_aeb_fp) << total_aeb_rec << "****\n";
             }
 
 /*            if (total_aeb_rec == 0)
@@ -863,7 +864,7 @@ resetRegion(const char* region)
             if (firstRecordOfs == numRecs)
             {
 //                fseek (_aib_fp, 0, SEEK_END);
-                std::cout << feof(_aib_fp) << total_aib_rec << "++++\n";
+//                std::cout << feof(_aib_fp) << total_aib_rec << "++++\n";
             }
 
 /*            if (total_aib_rec == 0)
@@ -887,7 +888,7 @@ resetRegion(const char* region)
                << "' from file '" << name() << "'\n";
         throw;
     }
-    std::cout << "bam_streamer::resetRegion " << region << "-" << std::endl;
+//    std::cout << "bam_streamer::resetRegion " << region << "-" << std::endl;
 }
 
 
@@ -1015,8 +1016,6 @@ next()
 {
     if (nullptr == _hfp) return false;
 
-    if (!_hitr)
-        std::cout << "bam_streamer::next " << _hitr << std::endl;
     int ret=-1;
     if (nullptr == _hitr)
     {
@@ -1121,6 +1120,7 @@ next()
         int aebValid = 0, aibValid = 0;
         if ((cur_aeb_rec < total_aeb_rec) && (fR[cur_aeb_rec].pos < curEnd)) aebValid = 1;
         if ((cur_aib_rec < total_aib_rec) && (oR[cur_aib_rec].pos < curEnd)) aibValid = 1;
+//	std::cout << "before aeb2bam , aib2bam\n";
         if (aebValid && (!aibValid || (fR[cur_aeb_rec].pos <= oR[cur_aib_rec].pos)))
         {
             aeb2bam();
@@ -1149,7 +1149,7 @@ next()
         }
         else
         {
-            std::cout << "Region " << curTid << ":" << curStart << "-" << curEnd << " NumRecsProcessed: " << _record_no << " numAEBs " << cur_aeb_rec << " numAIBs " << cur_aib_rec << std::endl;
+//            std::cout << "Region " << curTid << ":" << curStart << "-" << curEnd << " NumRecsProcessed: " << _record_no << " numAEBs " << cur_aeb_rec << " numAIBs " << cur_aib_rec << std::endl;
         }
     }
 

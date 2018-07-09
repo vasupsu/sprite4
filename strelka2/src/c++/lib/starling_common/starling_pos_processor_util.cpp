@@ -87,7 +87,7 @@ registerAlignments(
     const std::vector<unsigned>& registrationIndices,
     HtsMergeStreamer& streamData, int rank, int numTasks)
 {
-    std::cout << "registerAlignments_rank" << std::endl;
+//    std::cout << "registerAlignments_rank" << std::endl;
     const unsigned alignmentFileCount(alignmentFilename.size());
     assert(registrationIndices.size() == alignmentFileCount);
 

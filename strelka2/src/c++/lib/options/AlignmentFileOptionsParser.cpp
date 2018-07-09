@@ -60,7 +60,7 @@ checkOptions(
     errorMsg.clear();
     if (opt.alignmentFilenames.empty())
     {
-        errorMsg="Must specify at least one input alignment file";
+        errorMsg="Must specify at least one input alignment file";//align-file remove
     }
     else
     {

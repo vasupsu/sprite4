@@ -125,7 +125,6 @@ callRegion(
     posProcessor.resetRegion(regionInfo.regionChrom, regionInfo.regionRange);
     streamData.resetRegion(regionInfo.streamerRegion.c_str());
     setRefSegment(opt, regionInfo.regionChrom, regionInfo.refRegionRange, ref);
-    int print =1;
     while (streamData.next())
     {
         const pos_t currentPos(streamData.getCurrentPos());
@@ -147,12 +146,6 @@ callRegion(
 
             // Approximate begin range filter: (removed for RNA-Seq)
             //if((current_pos+MAX_READ_SIZE+maxIndelSize) <= rlimit.begin_pos) continue;
-            if (print)
-            {
-                const bam_streamer& bstr = streamData.getCurrentBamStreamer();
-//                std::cout << " Process region " << regionInfo.streamerRegion << "C:" << bstr.curTid << ":" << bstr.startFile << "(" << bstr.cur_aeb_rec << "/" << bstr.total_aeb_rec << "," << bstr.cur_aib_rec << "/" << bstr.total_aib_rec << ")" << "-" << bstr.endFile << std::endl;
-                print = 0;
-            }
             processInputReadAlignment(opt, ref, streamData.getCurrentBamStreamer(),
                                       streamData.getCurrentBam(), currentPos,
                                       readCounts, posProcessor, currentIndex);
@@ -276,7 +269,7 @@ void *thread_worker (void *data)
         int firstMsg = 1;
 
         int remainingCountReceivedCount=0, maxCount=0, maxRank=0;
-        while (*wdata->numFinishedTasks < wdata->numTasks)
+        while (*wdata->numFinishedTasks < (uint32_t)wdata->numTasks)
         {
             if (firstMsg)
             {
@@ -338,14 +331,14 @@ void *thread_worker (void *data)
                 {
                     int numRegionsToSend = rem/2;
                     int newEnd = *wdata->endRegion - numRegionsToSend*wdata->numTasks;
-                    for (buf = newEnd + 1; buf <= *wdata->endRegion; buf++)
+                    for (buf = newEnd + 1; buf <= (int)(*wdata->endRegion); buf++)
                     {
                         if (buf % wdata->numTasks == rank) break;
                     }
                     assert (buf % wdata->numTasks == rank);
                     for (int i=0; i<numRegionsToSend; i++)
                     {
-                        assert (buf+i*wdata->numTasks <= *wdata->endRegion);
+                        assert (buf+i*wdata->numTasks <= (int)(*wdata->endRegion));
                     }
                     *wdata->endRegion = newEnd;
                     numRegionsToSend += RANGE_MSG_OFS;
@@ -372,6 +365,7 @@ void *thread_worker (void *data)
         pthread_mutex_lock(wdata->lock);
         pthread_cond_signal(wdata->cond);
         pthread_mutex_unlock(wdata->lock);
+	return NULL;
 }
 
 void
@@ -466,34 +460,32 @@ starling_run(
     }
     const auto& referenceAlignmentFilename(opt.alignFileOpt.alignmentFilenames.front());
     std::vector<AnalysisRegionInfo> regionInfoList;
-    std::cout << "Before getStrelkaAnalysisRegions" << std::endl;
-    std::cout << "bam_streamer::next() returns " << streamData.next() << std::endl;
+    int nextRet = streamData.next();
+//    std::cout << "streamData.next returns " << nextRet << std::endl;
+    assert (nextRet == 1);
     const HTS_TYPE::index_t currentHtsType(streamData.getCurrentType());
     if (HTS_TYPE::BAM == currentHtsType)
     {
-        std::cout << "Current HtsType: HTS_TYPE::BAM"  << std::endl;
         const bam_streamer &bstr = streamData.getCurrentBamStreamer();
 //        bstr.rank = rank;
-        std::cout << "NumRegions: " << bstr.regions.size() << " Original " << opt.regions.size () << std::endl;
+        if (rank == 0)
+            std::cout << "NumRegions: " << bstr.regions.size() << " Original " << opt.regions.size () << std::endl;
         getStrelkaAnalysisRegions(bstr, referenceAlignmentFilename, referenceHeaderInfo, supplementalRegionBorderSize, regionInfoList);
     }
 //    getStrelkaAnalysisRegions(opt, referenceAlignmentFilename, referenceHeaderInfo, supplementalRegionBorderSize, regionInfoList);
 
-#ifdef USE_MPI
-        std::cout << "[" << rank << "] Number of regions:" << regionInfoList.size() << std::endl;
-#endif
-
     uint32_t regionNumber=/*rank*regionInfoList.size()/numTasks*/rank, endRegion=/*((rank+1)*regionInfoList.size()/numTasks)-1*/regionInfoList.size()-1, numFinishedTasks=0;
 /*    if (endRegion > (regionInfoList.size()-1)) 
         endRegion = regionInfoList.size()-1;*/
-    printf ("[%d] [%d,%d]\n", rank, regionNumber, endRegion);
     int *procFinished = new int[numTasks];
     for (int i=0; i<numTasks; i++) procFinished[i]=0;
     
     pthread_mutex_t lock;
-    pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
     assert (pthread_mutex_init(&lock, NULL) == 0);
 
+//#define COMM
+#ifdef COMM
+    pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
     workerData wdata;
     wdata.lock = &lock;
     wdata.cond = &cond;
@@ -503,8 +495,6 @@ starling_run(
     wdata.procFinished = procFinished;
     wdata.endRegion = &endRegion;
     wdata.regionNumber = &regionNumber;
-//#define COMM
-#ifdef COMM
     pthread_t thr; 
     assert (pthread_create(&thr, NULL, thread_worker, &wdata) ==0);
 /*    if (rank == 0)
@@ -520,7 +510,7 @@ starling_run(
 #endif
     struct timeval stime, etime;
     gettimeofday (&stime, NULL);
-    while (numFinishedTasks < numTasks)
+    while ((int)numFinishedTasks < numTasks)
     {
             while (1)
             {
@@ -576,10 +566,10 @@ starling_run(
     pthread_join (thr, NULL);
 #endif
     long elapsedtime = (etime.tv_sec * 1000000 + etime.tv_usec) - (stime.tv_sec * 1000000 + stime.tv_usec);
-    MPI_Barrier(MPI_COMM_WORLD);
-    std::cout << "[" << rank << "] Elapsed time " << (double)elapsedtime/1000000 << " sec" << std::endl;
     delete procFinished;
 
     pthread_mutex_destroy(&lock);
     posProcessor.reset();
+    MPI_Barrier(MPI_COMM_WORLD);
+    std::cout << "[" << rank << "] Elapsed time " << (double)elapsedtime/1000000 << " sec" << std::endl;
 }

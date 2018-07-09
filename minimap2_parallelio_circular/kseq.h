@@ -75,7 +75,7 @@
 			if (rem >  (size_t)ks->bufsize) rem = (size_t)ks->bufsize; \
 			ks->end = __read(ks->buf, 1, rem, ks->f); \
 			if (ks->end < ks->bufsize) ks->is_eof = 1; \
-			assert (ks->end == rem); \
+			if (end_ofs < UINT64_MAX) assert (ks->end == rem); \
 			if (ks->end == 0) return -1; \
 		} \
 		return (int)ks->buf[ks->begin++]; \
@@ -112,7 +112,7 @@ typedef struct __kstring_t {
 					if (rem >  (size_t)ks->bufsize) rem = (size_t)ks->bufsize; \
 					ks->end = __read(ks->buf, 1, rem, ks->f); \
 					if (ks->end < ks->bufsize) ks->is_eof = 1; \
-					assert (ks->end == rem); \
+					if (end_ofs < UINT64_MAX) assert (ks->end == rem); \
 					if (ks->end == 0) break; \
 				} else break; \
 			} \

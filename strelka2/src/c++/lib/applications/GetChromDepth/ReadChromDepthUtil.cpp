@@ -436,7 +436,14 @@ readChromDepthFromAlignment(
 #ifdef DEBUG_DPS
             log_os << "scanning region: " << startPos << "," << endPos << "\n";
 #endif
-            read_stream.resetRegion(chromIndex, startPos, endPos);
+//            std::cout << "resetRegion " << chromIndex << ":" << startPos << "-" << endPos << std::endl;
+            //read_stream.resetRegion(chromIndex, startPos, endPos);
+            std::string regionStr (chromName + ":" + std::to_string(startPos+1) + "-" + std::to_string(endPos+1));
+//            regionStr << chromName << ":" << startPos << "-" << endPos;//vasu
+//            read_stream.resetRegion(chromIndex, startPos, endPos);
+            read_stream.resetRegion(regionStr.c_str());
+//            std::cout << "After resetRegion " << std::endl;
+
 
             cdTracker.setNewRegion();
 

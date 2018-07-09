@@ -43,6 +43,7 @@ check_function_exists(roundf HAVE_ROUNDF)
 check_function_exists(powf HAVE_POWF)
 
 include ("${THIS_MACROS_CMAKE}")
+message (STATUS "In cxxConfigure.cmake")
 
 if (NOT CMAKE_CXX_COMPILER_ID)
     message(FATAL_ERROR "Failed to detect c++ compiler id for CMAKE_CXX_COMPILER: '${CMAKE_CXX_COMPILER}'")
@@ -381,6 +382,8 @@ append_args (CMAKE_CXX_FLAGS "${CXX_WARN_FLAGS}")
 #
 # other customizations
 #
+append_args (CMAKE_CXX_FLAGS "-DUSE_MPI")
+append_args (CMAKE_C_FLAGS "-DUSE_MPI")
 if (${GNU_COMPAT_COMPILER})
     if ((NOT ${CMAKE_CXX_COMPILER_ID} STREQUAL "Intel") OR (${COMPILER_VERSION} VERSION_LESS "15.0"))
         append_args (CMAKE_CXX_FLAGS "-std=c++0x")

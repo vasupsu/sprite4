@@ -548,7 +548,7 @@ void mm_write_sam2(kstring_t *s, const mm_idx_t *mi, mm_bseq1_t *t, int seg_idx,
 			if (aebFp[fileNo] == NULL)
 			{
 				sprintf (fName, "%s_s%d.aeb", prefix, fileNo);
-				fprintf (stderr, "PREFIX %s\n", fName);
+//				fprintf (stderr, "PREFIX %s\n", fName);
 				aebFp[fileNo] = fopen (fName, "w");
 				assert (aebFp[fileNo] != NULL);
 			}
@@ -568,7 +568,7 @@ void mm_write_sam2(kstring_t *s, const mm_idx_t *mi, mm_bseq1_t *t, int seg_idx,
 			if (aibFp[fileNo] == NULL)
 			{
 				sprintf (fName, "%s_s%d.aib", prefix, fileNo);
-				fprintf (stderr, "PREFIX %s\n", fName);
+//				fprintf (stderr, "PREFIX %s\n", fName);
 				aibFp[fileNo] = fopen (fName, "w");
 				assert (aibFp[fileNo] != NULL);
 			}

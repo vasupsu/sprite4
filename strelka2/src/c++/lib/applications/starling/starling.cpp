@@ -92,6 +92,37 @@ runInternal(int argc, char* argv[]) const
     finalize_starling_options(pinfo,vm,opt);
 
     starling_run(pinfo,opt);
+    if (rank == 0)
+    {
+        std::cout << "Combining VCF Files..." << std::endl;
+        const std::string gvcfVariantsOutPath(opt.gvcf.outputPrefix+"variants.vcf");
+        FILE *fp_vcf_out = fopen (gvcfVariantsOutPath.c_str(), "w");
+        assert (fp_vcf_out != NULL);
+        char line[10000];
+        for (int i=0; i<numTasks; i++)
+        {
+            const std::string gvcfVariantsPath(opt.gvcf.outputPrefix+"variants."+std::to_string(i)+".vcf");
+            int numLines=0;
+            FILE *fp_vcf = fopen (gvcfVariantsPath.c_str(), "r");
+            assert (fp_vcf != NULL);
+            fgets (line, 10000, fp_vcf);
+            while (!feof (fp_vcf))
+            {
+                if ((i!=0) && (line[0]=='#'))
+                {
+                    fgets (line, 10000, fp_vcf);
+                    continue;
+                }
+                numLines++;
+                fputs (line, fp_vcf_out);
+                fgets (line, 10000, fp_vcf);
+            }
+
+            fclose (fp_vcf);
+        }
+        fclose (fp_vcf_out);
+        std::cout << "VCF file " << gvcfVariantsOutPath << " created" << std::endl;
+    }
 #ifdef USE_MPI
     MPI_Finalize();
 #endif

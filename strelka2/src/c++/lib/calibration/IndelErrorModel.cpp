@@ -235,7 +235,7 @@ getIndelErrorRate(
 {
     using namespace IndelErrorRateType;
 
-    checkSampleIndex(sampleIndex);
+    checkSampleIndex(sampleIndex);//align-file remove
 
     // tmp transition step until candidate error rates can be removed:
     const IndelErrorRateSet& errorRates(isCandidateRates ?
