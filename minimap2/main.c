@@ -353,7 +353,7 @@ int main(int argc, char *argv[])
 		sprintf (fileName, "%s%d/out", oprefix, rank);
 
 		int numOutChunks=0, numMaxChunks=0, maxChunkSize=0;
-                split_fasta (500, mi->seq, mi->n_seq, &numOutChunks, &numMaxChunks, &maxChunkSize);
+                split_fasta (4, mi->seq, mi->n_seq, &numOutChunks, &numMaxChunks, &maxChunkSize);
                 fprintf (stderr, "MaxChunkSize %d, numOutChunks %d, max num of chunks per contig %d\n", maxChunkSize, numOutChunks, numMaxChunks);
 		FILE **aebFp = (FILE **)calloc ((numMaxChunks * mi->n_seq), sizeof (FILE *));
                 assert (aebFp != NULL);

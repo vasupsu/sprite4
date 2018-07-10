@@ -275,7 +275,7 @@ int main(int argc, char **argv)
 	struct timeval stime, etime, stime1, etime1;
 	gettimeofday (&stime, NULL);
 //	for (i=procAssign[rank]; i<procAssign[rank+1]; )
-	for (contigNo = 0; contigNo < 24; contigNo++)
+	for (contigNo = 0; contigNo < NUM_CONTIGS; contigNo++)
 	{
 			////////////////count #records aligning to each position////////////
 		int segNo;
