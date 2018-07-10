@@ -24,12 +24,12 @@ endif
 .c.o:
 		$(CC) -c $(CFLAGS) $(CPPFLAGS) $(INCLUDES) $< -o $@
 
-all:$(PROG)  genFastqIdx_paired
+all:$(PROG)  genFastqIdx
 
 extra:all $(PROG_EXTRA)
 
-genFastqIdx_paired: genFastqIdx_paired.c
-		$(CC) $(CFLAGS) -o genFastqIdx_paired genFastqIdx_paired.c
+genFastqIdx: genFastqIdx.c
+		$(CC) $(CFLAGS) -o genFastqIdx genFastqIdx.c
 minimap2:main.o getopt.o libminimap2.a
 		$(CC) $(CFLAGS) main.o getopt.o -o $@ -L. -lminimap2 $(LIBS)
 

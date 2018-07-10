@@ -54,7 +54,7 @@ size_t file2Ofs=0;
 size_t findOfsOtherEnd (int fileNo, size_t offset, char *readName)
 {
 	printf ("Begin findOfsOtherEnd %s\n", readName);
-	size_t delta = fileSize[fileNo]*1/1000000;
+	size_t delta = fileSize[fileNo]*1/10000;
 	char *fileBuffer = (char *)malloc(2*delta);
 	assert (fileBuffer != NULL);
 	char curReadName[100];
