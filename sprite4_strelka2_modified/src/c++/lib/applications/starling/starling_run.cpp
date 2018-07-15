@@ -469,7 +469,7 @@ starling_run(
         const bam_streamer &bstr = streamData.getCurrentBamStreamer();
 //        bstr.rank = rank;
         if (rank == 0)
-            std::cout << "NumRegions: " << bstr.regions.size() << " Original " << opt.regions.size () << std::endl;
+            std::cout << "NewRefPartitions (StaticLB): " << bstr.regions.size() << " Original " << opt.regions.size () << std::endl;
         getStrelkaAnalysisRegions(bstr, referenceAlignmentFilename, referenceHeaderInfo, supplementalRegionBorderSize, regionInfoList);
     }
 //    getStrelkaAnalysisRegions(opt, referenceAlignmentFilename, referenceHeaderInfo, supplementalRegionBorderSize, regionInfoList);
@@ -517,7 +517,7 @@ starling_run(
                 const AnalysisRegionInfo& regionInfo = regionInfoList[regionNumber];
 //                if (regionNumber%100 == 0)
 //                if (/*(rank == 0) ||*/ (rank == 1)/* || (rank == 9) || (rank == 15) || (rank == 28) || (rank == 35) || (rank == 37) || (rank == 46)*/)
-                    std::cout << "Rank " << rank << " Process region (" << regionNumber << ") " << regionInfo.streamerRegion << "( End " << endRegion << " )" << std::endl;
+                    std::cout << "Rank " << rank << " Process region (" << regionNumber << ") " << regionInfo.streamerRegion << " (End " << endRegion << " )" << std::endl;
                 assert (not opt.isUseCallRegions());
                 {
 //                    if (regionNumber == 17233)
@@ -545,7 +545,7 @@ starling_run(
             }
         pthread_mutex_lock (&lock);
         gettimeofday (&etime, NULL);
-        std::cout << "Rank " << rank << " Comp Done. " << std::endl;
+//        std::cout << "Rank " << rank << " Comp Done. " << std::endl;
 
 #ifdef COMM
 	std::cout << "Unfinished: ";

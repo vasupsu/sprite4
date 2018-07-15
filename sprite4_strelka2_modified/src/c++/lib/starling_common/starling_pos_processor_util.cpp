@@ -88,7 +88,7 @@ registerAlignments(
     const int maxReferenceSegs,
     HtsMergeStreamer& streamData, int rank, int numTasks)
 {
-    std::cout << "registerAlignments_rank " << aebaibPrefix << " num segs " << maxReferenceSegs << std::endl;
+//    std::cout << "registerAlignments_rank " << aebaibPrefix << " num segs " << maxReferenceSegs << std::endl;
     const unsigned alignmentFileCount(alignmentFilename.size());
     assert(registrationIndices.size() == alignmentFileCount);
 

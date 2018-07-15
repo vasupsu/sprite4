@@ -130,7 +130,7 @@ struct HtsMergeStreamer
         const std::string& bamFilename,
         const unsigned index = 0)
     {
-        std::cout << "registerBam_normal" << std::endl;
+//        std::cout << "registerBam_normal" << std::endl;
         return registerHtsType(bamFilename, index,_data._bam);
     }
 
@@ -139,7 +139,7 @@ struct HtsMergeStreamer
         const std::string& bamFilename,
         const unsigned index, const std::string& aebaibPrefix, int maxReferenceSegs, int rank, int numTasks)
     {
-        std::cout << "registerBam_rank" << std::endl;
+//        std::cout << "registerBam_rank" << std::endl;
         return registerHtsType(bamFilename, index, aebaibPrefix, maxReferenceSegs, _data._bam, rank, numTasks);
     }
 

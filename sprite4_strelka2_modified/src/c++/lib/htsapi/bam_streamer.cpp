@@ -325,7 +325,7 @@ split_aebaib3()
 {
     const bam_hdr_t &bhdr = get_header();
     size_t rSize = 100000;
-    std::cout << "split_aebaib3\n";
+//    std::cout << "split_aebaib3\n";
 /*    size_t *numAebRecs = (size_t *)calloc (nContigs*numMaxChunks, sizeof(size_t));
     size_t *numAibRecs = (size_t *)calloc (nContigs*numMaxChunks, sizeof(size_t));
     size_t *prefixSumRecs = (size_t *)calloc (nContigs*numMaxChunks+1, sizeof(size_t));
@@ -394,8 +394,8 @@ split_aebaib3()
                 curSeg = numSegsPerRegion;
                 if (curOfs > prevOfs)
                 {
-                    if (rank == 0)
-                        std::cout << "Rank " << rank << "/" << numTasks << " split_aebaib3 " << bhdr.target_name[i] + std::string (":") + std::string (std::to_string (prevOfs)) + std::string ("-") + std::string (std::to_string (curOfs-1)) << std::endl;
+//                    if (rank == 0)
+//                        std::cout << "Rank " << rank << "/" << numTasks << " split_aebaib3 " << bhdr.target_name[i] + std::string (":") + std::string (std::to_string (prevOfs)) + std::string ("-") + std::string (std::to_string (curOfs-1)) << std::endl;
                     regions.push_back (std::string (bhdr.target_name[i] + std::string (":") + std::string (std::to_string (prevOfs)) + std::string ("-") + std::string (std::to_string (curOfs-1))));
                 }
                 prevOfs = curOfs;
