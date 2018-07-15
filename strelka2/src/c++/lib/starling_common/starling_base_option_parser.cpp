@@ -112,12 +112,14 @@ get_starling_base_option_parser(
      "Specify vcf file describing ploidy of regions. Regions span [POS+1,INFO/END] and use FORMAT/CN to indicate the per-sample region ploidy. Any CN value besides 1 and 0 are ignored. (must be bgzip compressed and tabix indexed)")
     ;
 
-    po::options_description input_opt("input-options");
+    po::options_description input_opt("input-options");//vas
     input_opt.add_options()
     ("max-input-depth", po::value(&opt.max_input_depth),
      "Maximum allowed read depth per sample (prior to realignment). Input reads which would exceed this depth are filtered out.  (default: no limit)")
     ("max-sample-read-buffer", po::value(&opt.maxBufferedReads)->default_value(opt.maxBufferedReads),
      "Maximum reads buffered for each sample")
+    ("max-ref-segs", po::value(&opt.maxReferenceSegs)->default_value(opt.maxReferenceSegs),
+     "Maximum number of reference genome partitions")
     ;
 
     po::options_description other_opt("other-options");

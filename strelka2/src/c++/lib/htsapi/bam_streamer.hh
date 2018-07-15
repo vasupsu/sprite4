@@ -80,6 +80,8 @@ struct bam_streamer : public boost::noncopyable
     bam_streamer(
         const char* filename,
         const char* referenceFilename,
+        const char* aebaibPrefix,
+        const int maxReferenceSegs,
         int rank, int numTasks, 
         const char* region = nullptr);
     ~bam_streamer();

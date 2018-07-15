@@ -40,21 +40,16 @@ bam_streamer(
     const char* filename,
     const char* referenceFilename,
     const char* region)
-    : _is_record_set(false),
+    :  curBamRec (NULL), startFile (-1), endFile (-1), curTid(-1), cur_aeb_rec (-1), cur_aib_rec (-1), total_aeb_rec (-1), total_aib_rec (-1),
+      _is_record_set(false),
       _hfp(nullptr),
-      _aeb_fp(NULL), _aib_fp(NULL), fR(NULL), oR(NULL),
-      curTid(-1), curData(NULL), curBamRec (NULL), totalSegments(4), numOutChunks(0), numMaxChunks(0), maxChunkSize(0), aebaib_prefix("/i3c/sparse/vxr162/journal_paper/miniconda2/pkgs/sprite4-4.0-py27_0/opFiles/tmp2N_0"), startFile (-1), cur_aeb_rec (-1), total_aeb_rec (-1), endFile (-1), cur_aib_rec (-1), total_aib_rec (-1),
-//      curTid(-1), curData(NULL), curBamRec (NULL), totalSegments(500), numOutChunks(0), numMaxChunks(0), maxChunkSize(0), aebaib_prefix("/scratch/03201/tg824998/ERR194147/opFiles/tmp1N_0"), startFile (-1), cur_aeb_rec (-1), total_aeb_rec (-1), endFile (-1), cur_aib_rec (-1), total_aib_rec (-1),
-//      curTid(-1), curData(NULL), curBamRec (NULL), totalSegments(500), numOutChunks(0), numMaxChunks(0), maxChunkSize(0), aebaib_prefix("/scratch/03201/tg824998/Venter/opFiles/tmp1N_0"), startFile (-1), cur_aeb_rec (-1), total_aeb_rec (-1), endFile (-1), cur_aib_rec (-1), total_aib_rec (-1),
-//      curTid(-1), curData(NULL), curBamRec (NULL), totalSegments(500), numOutChunks(0), numMaxChunks(0), maxChunkSize(0), aebaib_prefix("/scratch/03201/tg824998/ERR194147/opFiles/parsnip_out"), startFile (-1), cur_aeb_rec (-1), total_aeb_rec (-1), endFile (-1), cur_aib_rec (-1), total_aib_rec (-1),
-//      curTid(-1), curData(NULL), curBamRec (NULL), totalSegments(500), numOutChunks(0), numMaxChunks(0), maxChunkSize(0), aebaib_prefix("/scratch/03201/tg824998/ERR091571/opFiles/parsnip_out"), startFile (-1), cur_aeb_rec (-1), total_aeb_rec (-1), endFile (-1), cur_aib_rec (-1), total_aib_rec (-1),
-//      curTid(-1), curData(NULL), curBamRec (NULL), totalSegments(500), numOutChunks(0), numMaxChunks(0), maxChunkSize(0), aebaib_prefix("/scratch/03201/tg824998/Venter/opFiles/parsnip_out"), startFile (-1), cur_aeb_rec (-1), total_aeb_rec (-1), endFile (-1), cur_aib_rec (-1), total_aib_rec (-1),
       _hdr(nullptr),
       _hidx(nullptr),
       _hitr(nullptr),
       _record_no(0),
       _stream_name(filename),
-      _is_region(false)
+      _is_region(false),
+      aebaib_prefix(""), totalSegments(500), numOutChunks(0), numMaxChunks(0), maxChunkSize(0), _aeb_fp(NULL), _aib_fp(NULL), fR(NULL), oR(NULL), curData(NULL)
 {
     assert(nullptr != filename);
     if ('\0' == *filename)
@@ -88,7 +83,7 @@ bam_streamer(
     curData = (uint8_t *)malloc (20000 * sizeof(uint8_t));
     assert (curData != NULL);
     curBamRec = bam_init1();
-//    std::cout << "BAM streamer constructor" << std::endl;
+//    std::cout << "BAM streamer constructor 1" << std::endl;
     split_fasta ();
     if (nullptr == region)
     {
@@ -114,23 +109,20 @@ bam_streamer::
 bam_streamer(
     const char* filename,
     const char* referenceFilename,
-    int r, int numTasks,
+    const char* aebaibPrefix,
+    int maxReferenceSegs,
+    int r, int n,
     const char* region)
-    : _is_record_set(false),
+    :  curBamRec (NULL), startFile (-1), endFile (-1), curTid(-1), cur_aeb_rec (-1), cur_aib_rec (-1), total_aeb_rec (-1), total_aib_rec (-1), rank (r), numTasks (n),
+      _is_record_set(false),
       _hfp(nullptr),
-      _aeb_fp(NULL), _aib_fp(NULL), fR(NULL), oR(NULL),
-      curTid(-1), curData(NULL), curBamRec (NULL), totalSegments(4), numOutChunks(0), numMaxChunks(0), maxChunkSize(0), aebaib_prefix("/i3c/sparse/vxr162/journal_paper/miniconda2/pkgs/sprite4-4.0-py27_0/opFiles/tmp2N_0"), startFile (-1), cur_aeb_rec (-1), total_aeb_rec (-1), endFile (-1), cur_aib_rec (-1), total_aib_rec (-1), rank(r), numTasks(numTasks),
-//      curTid(-1), curData(NULL), curBamRec (NULL), totalSegments(500), numOutChunks(0), numMaxChunks(0), maxChunkSize(0), aebaib_prefix("/scratch/03201/tg824998/ERR194147/opFiles/tmp1N_0"), startFile (-1), cur_aeb_rec (-1), total_aeb_rec (-1), endFile (-1), cur_aib_rec (-1), total_aib_rec (-1), rank(r), numTasks(numTasks),
-//      curTid(-1), curData(NULL), curBamRec (NULL), totalSegments(500), numOutChunks(0), numMaxChunks(0), maxChunkSize(0), aebaib_prefix("/scratch/03201/tg824998/Venter/opFiles/tmp1N_0"), startFile (-1), cur_aeb_rec (-1), total_aeb_rec (-1), endFile (-1), cur_aib_rec (-1), total_aib_rec (-1), rank(r), numTasks(numTasks),
-//      curTid(-1), curData(NULL), curBamRec (NULL), totalSegments(500), numOutChunks(0), numMaxChunks(0), maxChunkSize(0), aebaib_prefix("/scratch/03201/tg824998/ERR194147/opFiles/parsnip_out"), startFile (-1), cur_aeb_rec (-1), total_aeb_rec (-1), endFile (-1), cur_aib_rec (-1), total_aib_rec (-1), rank(r), numTasks(numTasks),
-//      curTid(-1), curData(NULL), curBamRec (NULL), totalSegments(500), numOutChunks(0), numMaxChunks(0), maxChunkSize(0), aebaib_prefix("/scratch/03201/tg824998/ERR091571/opFiles/parsnip_out"), startFile (-1), cur_aeb_rec (-1), total_aeb_rec (-1), endFile (-1), cur_aib_rec (-1), total_aib_rec (-1), rank(r), numTasks(numTasks),
-//      curTid(-1), curData(NULL), curBamRec (NULL), totalSegments(500), numOutChunks(0), numMaxChunks(0), maxChunkSize(0), aebaib_prefix("/scratch/03201/tg824998/Venter/opFiles/parsnip_out"), startFile (-1), cur_aeb_rec (-1), total_aeb_rec (-1), endFile (-1), cur_aib_rec (-1), total_aib_rec (-1), rank(r), numTasks(numTasks),
       _hdr(nullptr),
       _hidx(nullptr),
       _hitr(nullptr),
       _record_no(0),
       _stream_name(filename),
-      _is_region(false)
+      _is_region(false),
+      aebaib_prefix(aebaibPrefix), totalSegments(maxReferenceSegs), numOutChunks(0), numMaxChunks(0), maxChunkSize(0), _aeb_fp(NULL), _aib_fp(NULL), fR(NULL), oR(NULL), curData(NULL)
 {
     assert(nullptr != filename);
     if ('\0' == *filename)
@@ -164,7 +156,7 @@ bam_streamer(
     curData = (uint8_t *)malloc (20000 * sizeof(uint8_t));
     assert (curData != NULL);
     curBamRec = bam_init1();
-//    std::cout << "BAM streamer constructor" << std::endl;
+//    std::cout << "BAM streamer constructor 2 " << std::endl;
     split_fasta ();
 //    split_aebaib2 ();
     split_aebaib3 ();
@@ -213,7 +205,7 @@ split_aebaib()
 {
     const bam_hdr_t &bhdr = get_header();
     size_t numAebs=0, numAibs=0;
-    struct stat sbuf, sbuf2;
+    struct stat sbuf;
     for (int i=0; i<nContigs; i++)
     {
         for (int j=0; j<numMaxChunks; j++)
@@ -240,7 +232,7 @@ split_aebaib()
     for (int i=0; i<nContigs; i++)
     {
         int minPos = -1, minChunk =-1;
-        int maxPos = 0, maxChunk = -1;
+        int maxPos = 0/*, maxChunk = -1*/;
         int lastPos = 0;
         if (i > 24) break;
         for (int j=0; j<numMaxChunks; j++)
@@ -264,7 +256,7 @@ split_aebaib()
             if (tmpfp != NULL)
             {
                 assert (fread (&orec, sizeof(otherRec), 1, tmpfp) == 1);
-                if ((minPos == -1) || (orec.pos < minPos)) 
+                if ((minPos == -1) || ((int)orec.pos < minPos)) 
                 {
                     minPos = orec.pos;
                     minChunk = j;
@@ -292,7 +284,7 @@ split_aebaib()
                      assert (fread (&frec, sizeof(fullRec), 1, tmpfp) == 1);
                      std::cout << "1-" << bhdr.target_name[i] << ":" << lastPos << "-" << frec.pos-1 << std::endl;
                      regions.push_back (std::string (bhdr.target_name[i]) + std::string (":") + std::string (std::to_string (lastPos)) + std::string ("-") + std::string (std::to_string (frec.pos-1)));
-                     assert ((lastPos != frec.pos) && (lastPos < frec.pos-1));
+                     assert ((lastPos != (int)frec.pos) && (lastPos < (int)frec.pos-1));
                      lastPos = frec.pos;
                      fclose (tmpfp);
                      nextSize += rSize;
@@ -303,7 +295,7 @@ split_aebaib()
             {
                 fseek (tmpfp, (nrecs-1)*sizeof(fullRec), SEEK_SET);
                 assert (fread (&frec, sizeof(fullRec), 1, tmpfp) == 1);
-                if (frec.pos > maxPos)
+                if ((int)frec.pos > maxPos)
                     maxPos = frec.pos;
 //                std::cout << "2a-C" << i << ":" << frec.pos << std::endl;
                 fclose (tmpfp);
@@ -315,7 +307,7 @@ split_aebaib()
                 fseek (tmpfp, 0, SEEK_END);
                 fseek (tmpfp, ftell(tmpfp)-sizeof(otherRec), SEEK_SET);
                 assert (fread (&orec, sizeof(otherRec), 1, tmpfp) == 1);
-                if (orec.pos > maxPos) maxPos = orec.pos;
+                if ((int)orec.pos > maxPos) maxPos = orec.pos;
 //                std::cout << "2b-C" << i << ":" << orec.pos << std::endl;
                 fclose (tmpfp);
             }
@@ -333,12 +325,13 @@ split_aebaib3()
 {
     const bam_hdr_t &bhdr = get_header();
     size_t rSize = 100000;
+    std::cout << "split_aebaib3\n";
 /*    size_t *numAebRecs = (size_t *)calloc (nContigs*numMaxChunks, sizeof(size_t));
     size_t *numAibRecs = (size_t *)calloc (nContigs*numMaxChunks, sizeof(size_t));
     size_t *prefixSumRecs = (size_t *)calloc (nContigs*numMaxChunks+1, sizeof(size_t));
     assert ((numAebRecs != NULL) && (numAibRecs != NULL) && (prefixSumRecs != NULL));
     size_t numAebs=0, numAibs=0;
-    struct stat sbuf, sbuf2;
+    struct stat sbuf;
     for (int i=0; i<nContigs; i++)
     {
         for (int j=0; j<numMaxChunks; j++)
@@ -421,7 +414,7 @@ split_aebaib2()
 {
     const bam_hdr_t &bhdr = get_header();
     size_t numAebs=0, numAibs=0;
-    struct stat sbuf, sbuf2;
+    struct stat sbuf;
     for (int i=0; i<nContigs; i++)
     {
         for (int j=0; j<numMaxChunks; j++)
@@ -448,7 +441,7 @@ split_aebaib2()
     for (int i=0; i<nContigs; i++)
     {
         int minPos = -1, minChunk =-1;
-        int maxPos = 0, maxChunk = -1;
+        int maxPos = 0/*, maxChunk = -1*/;
         int lastPos = 0;
         if (i > 24) break;
         for (int j=0; j<numMaxChunks; j++)
@@ -472,7 +465,7 @@ split_aebaib2()
             if (tmpfp != NULL)
             {
                 assert (fread (&orec, sizeof(otherRec), 1, tmpfp) == 1);
-                if ((minPos == -1) || (orec.pos < minPos)) 
+                if ((minPos == -1) || ((int)orec.pos < minPos)) 
                 {
                     minPos = orec.pos;
                     minChunk = j;
@@ -502,8 +495,6 @@ split_aebaib2()
                  if (nrecs_aeb > nrecs_aib)
                      nrecs = sbuf.st_size/sizeof(fullRec);///vasu
             }
-            float aeb_frac  = (float)nrecs_aeb/nrecs;
-            float aib_frac = (float)nrecs_aib/nrecs;
             if (nrecs_aeb > nrecs_aib)
             {
                  sprintf (fname, "%s/C%d_%d_sorted.aeb", aebaib_prefix.c_str(), i, j);
@@ -516,7 +507,7 @@ split_aebaib2()
                      if (rank ==0)
                          std::cout << "f1-" << bhdr.target_name[i] << ":" << lastPos << "-" << frec.pos-1 << " segNo " << j <<" nrecs_aeb " << nrecs_aeb << " nrecs_aib " << nrecs_aib << " aebofs: " << nextSize-curSize << std::endl;
                      regions.push_back (std::string (bhdr.target_name[i]) + std::string (":") + std::string (std::to_string (lastPos)) + std::string ("-") + std::string (std::to_string (frec.pos-1)));
-                     assert ((lastPos != frec.pos) && (lastPos < frec.pos-1));
+                     assert ((lastPos != (int)frec.pos) && (lastPos < (int)frec.pos-1));
                      lastPos = frec.pos;
                      fclose (tmpfp);
                      nextSize += rSize;
@@ -534,7 +525,7 @@ split_aebaib2()
                      if (rank == 0)
                          std::cout << "o1-" << bhdr.target_name[i] << ":" << lastPos << "-" << orec.pos-1 << std::endl;
                      regions.push_back (std::string (bhdr.target_name[i]) + std::string (":") + std::string (std::to_string (lastPos)) + std::string ("-") + std::string (std::to_string (orec.pos-1)));
-                     assert ((lastPos != orec.pos) && (lastPos < orec.pos-1));
+                     assert ((lastPos != (int)orec.pos) && (lastPos < (int)orec.pos-1));
                      lastPos = orec.pos;
                      fclose (tmpfp);
                      nextSize += rSize;
@@ -548,16 +539,16 @@ split_aebaib2()
                 {
                     fseek (tmpfp, ftell(tmpfp)-sizeof(fullRec), SEEK_SET);
                     assert (fread (&frec, sizeof(fullRec), 1, tmpfp) == 1);
-                    if (frec.pos > maxPos)
-                        maxPos = frec.pos;
+                    if ((int)frec.pos > maxPos)
+                        maxPos = (int)frec.pos;
 //                  std::cout << "2a-C" << i << ":" << frec.pos << std::endl;
                 }
                 else
                 {
                     fseek (tmpfp, ftell(tmpfp)-sizeof(otherRec), SEEK_SET);
                     assert (fread (&orec, sizeof(otherRec), 1, tmpfp) == 1);
-                    if (orec.pos > maxPos)
-                        maxPos = orec.pos;
+                    if ((int)orec.pos > maxPos)
+                        maxPos = (int)orec.pos;
 //                  std::cout << "2a-C" << i << ":" << orec.pos << std::endl;
                 }
                 fclose (tmpfp);
@@ -574,13 +565,13 @@ split_aebaib2()
                 {
                     fseek (tmpfp, ftell(tmpfp)-sizeof(otherRec), SEEK_SET);
                     assert (fread (&orec, sizeof(otherRec), 1, tmpfp) == 1);
-                    if (orec.pos > maxPos) maxPos = orec.pos;
+                    if ((int)orec.pos > maxPos) maxPos = (int)orec.pos;
                 }
                 else
                 {
                     fseek (tmpfp, ftell(tmpfp)-sizeof(fullRec), SEEK_SET);
                     assert (fread (&frec, sizeof(fullRec), 1, tmpfp) == 1);
-                    if (frec.pos > maxPos) maxPos = frec.pos;
+                    if ((int)frec.pos > maxPos) maxPos = (int)frec.pos;
                 }
 //                std::cout << "2b-C" << i << ":" << orec.pos << std::endl;
                 fclose (tmpfp);
@@ -602,14 +593,15 @@ split_fasta()
 	nContigs = numContigs;
 //	std::cout << "NumContigs " << numContigs << std::endl;
 	if (numContigs < 93) totalSegments=numContigs;
-	int32_t maxContigSize = 0;
+	uint32_t maxContigSize = 0;
 	int i=0;
 	for (i=0; i<numContigs; i++)
 	{
 //		std::cout << "Contig " << i << " len " << bhdr.target_len[i] << std::endl;
 		if (bhdr.target_len[i] > maxContigSize) maxContigSize = bhdr.target_len[i];
 	}
-	int curChunks = 0, curContigSize=maxContigSize;
+	int curChunks = 0;
+	uint32_t curContigSize = maxContigSize;
 	while (curChunks < totalSegments)
 	{
 		curChunks = 0;
@@ -700,7 +692,6 @@ size_t bam_streamer::getFirstRecordIndexForRange (FILE *fp, int isaibfile, size_
     int h = (int)h1;
     int l = (int)l1;
     int lastrec = h;
-    size_t sizePerRec = isaibfile? sizeof(otherRec) : sizeof(fullRec);
     int m=l, iter=0;
     int mpos=-1, prevpos=-1, nextpos=-1;
     while (l <= h)
@@ -846,7 +837,7 @@ resetRegion(const char* region)
             if (nContigs == 93)
             {
 //                std::cout << "File C" << referenceContigId << "_" << startFile << "_sorted.aeb first,last " << fR[0].pos << "," << fR[total_aeb_rec-1].pos << " < [" << beginPos << "," << endPos << "] curRec " << cur_aeb_rec << " (" << firstRecordOfs << ")" << std::endl;
-                assert ((total_aeb_rec == 0) || ((fR[total_aeb_rec-1].pos >= beginPos)));
+                assert ((total_aeb_rec == 0) || (((int)(fR[total_aeb_rec-1].pos) >= beginPos)));
             }
         }
         if (_aib_fp != NULL)
@@ -878,7 +869,7 @@ resetRegion(const char* region)
             if (nContigs == 93)
             {
 //                std::cout << "File C" << referenceContigId << "_" << startFile << "_sorted.aib first,last " << oR[0].pos << "," << oR[total_aib_rec-1].pos << " < [" << beginPos << "," << endPos << "] curRec " << cur_aib_rec << " (" << firstRecordOfs << ")" << std::endl;
-                assert ((total_aib_rec == 0) || ((oR[total_aib_rec-1].pos >= beginPos)));
+                assert ((total_aib_rec == 0) || (((int)(oR[total_aib_rec-1].pos) >= beginPos)));
             }
         }
     }
@@ -979,7 +970,7 @@ aib2bam () {
     c->n_cigar = oR[cur_aib_rec].n_cigar;
     uint32_t *cigars = (uint32_t *)(curData+20);
     c->l_qseq = 0;
-    for (int i=0; i<c->n_cigar; i++)
+    for (uint32_t i=0; i<c->n_cigar; i++)
     {
         cigars[i]=oR[cur_aib_rec].cigar[i];
         char c1="MIDNSHP=XB"[oR[cur_aib_rec].cigar[i] & 0xF];
@@ -1060,7 +1051,7 @@ next()
 //                std::cout << "aebread start\n";
                 total_aeb_rec = fread (fR, sizeof(fullRec), 1000, _aeb_fp);
                 gettimeofday (&etime, NULL);
-                long elapsed = (etime.tv_sec * 1000000 + etime.tv_usec) - (stime.tv_sec * 1000000 + stime.tv_usec);
+//                long elapsed = (etime.tv_sec * 1000000 + etime.tv_usec) - (stime.tv_sec * 1000000 + stime.tv_usec);
 //                std::cout << "aebread end" << (double)elapsed/1000000 << "\n";
                 if (total_aeb_rec == 0) aebeof = 1;
             }
@@ -1077,7 +1068,7 @@ next()
 //                std::cout << "aibread start\n";
                 total_aib_rec = fread (oR, sizeof(otherRec), 1000, _aib_fp);
                 gettimeofday (&etime, NULL);
-                long elapsed = (etime.tv_sec * 1000000 + etime.tv_usec) - (stime.tv_sec * 1000000 + stime.tv_usec);
+//                long elapsed = (etime.tv_sec * 1000000 + etime.tv_usec) - (stime.tv_sec * 1000000 + stime.tv_usec);
 //                std::cout << "aibread end" << (double)elapsed/1000000 << "\n";
                 if (total_aib_rec == 0) aibeof = 1;
             }

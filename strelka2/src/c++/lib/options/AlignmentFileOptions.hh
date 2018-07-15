@@ -30,4 +30,5 @@ struct AlignmentFileOptions
     typedef std::vector<std::string> files_t;
 
     files_t alignmentFilenames;
+    std::string aebaibPrefix;
 };

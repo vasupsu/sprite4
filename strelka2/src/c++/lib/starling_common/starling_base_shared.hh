@@ -203,6 +203,8 @@ struct starling_base_options : public blt_options
     ///
     /// set to zero to disable limit
     unsigned maxBufferedReads = 100000;
+    int maxReferenceSegs = 500;
+    std::string aebaibPrefix;
 
     bool isBasecallQualAdjustedForMapq = true;
 

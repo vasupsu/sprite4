@@ -1,4 +1,5 @@
 #include <stdlib.h>
+//#include <unistd.h>
 #include <stdio.h>
 #include <string.h>
 #include <sys/stat.h>
@@ -16,6 +17,7 @@
 #include <sys/resource.h>
 #include <sys/time.h>
 int numTasks = 1, rank = 0;
+int numChunks = 500;
 void liftrlimit()
 {
 	struct rlimit r;
@@ -60,6 +62,7 @@ static struct option long_options[] = {
 	{ "mask-level",     required_argument, 0, 'M' },
 	{ "min-dp-score",   required_argument, 0, 's' },
 	{ "sam",            no_argument,       0, 'a' },
+	{ "segs",   optional_argument, 0, 0 },
 	{ 0, 0, 0, 0}
 };
 
@@ -74,7 +77,7 @@ static inline int64_t mm_parse_num(const char *str)
 	return (int64_t)(x + .499);
 }
 
-void split_fasta (int numChunks, mm_idx_seq_t *seq, int numContigs, int *numOutChunks, int *numMaxChunks, int *maxChunkSize)
+void split_fasta (mm_idx_seq_t *seq, int numContigs, int *numOutChunks, int *numMaxChunks, int *maxChunkSize)
 {
         int32_t maxContigSize = 0;
         int i=0;
@@ -124,9 +127,10 @@ int main(int argc, char *argv[])
 	MPI_Init_thread(&argc,&argv, MPI_THREAD_MULTIPLE, &provided);
 	MPI_Comm_size(MPI_COMM_WORLD,&numTasks);
 	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
-	char hostname[100];
-	gethostname (hostname, 100);
-	fprintf (stderr, "numTasks %d rank %d hostname %s, Thread support %d, requested %d\n", numTasks, rank, hostname, provided, MPI_THREAD_MULTIPLE);
+//	char hostname[100];
+//	gethostname (hostname, 100);
+//	fprintf (stderr, "numTasks %d rank %d hostname %s, Thread support %d, requested %d\n", numTasks, rank, hostname, provided, MPI_THREAD_MULTIPLE);
+//	assert (provided
 #endif
 
 	mm_verbose = 3;
@@ -215,6 +219,8 @@ int main(int argc, char *argv[])
 			} else if (mm_verbose >= 2) {
 				fprintf(stderr, "[WARNING]\033[1;31m --cs only takes 'short' or 'long'. Invalid values are assumed to be 'short'.\033[0m\n");
 			}
+		} else if (c == 0 && long_idx == 32) { // --segs
+			numChunks = atoi(optarg);
 		} else if (c == 0 && long_idx == 19) { // --splice-flank
 			if (optarg == 0 || strcmp(optarg, "yes") == 0 || strcmp(optarg, "y") == 0)
 				opt.flag |= MM_F_SPLICE_FLANK;
@@ -299,6 +305,7 @@ int main(int argc, char *argv[])
 		fprintf(fp_help, "    -Y           use soft clipping for supplementary alignments\n");
 		fprintf(fp_help, "    -t INT       number of threads [%d]\n", n_threads);
 		fprintf(fp_help, "    -K NUM       minibatch size for mapping [500M]\n");
+		fprintf(fp_help, "    --segs[=INT] maximum number of output reference regions [500]\n");
 //		fprintf(fp_help, "    -v INT       verbose level [%d]\n", mm_verbose);
 		fprintf(fp_help, "    --version    show version number\n");
 		fprintf(fp_help, "  Preset:\n");
@@ -353,7 +360,7 @@ int main(int argc, char *argv[])
 		sprintf (fileName, "%s%d/out", oprefix, rank);
 
 		int numOutChunks=0, numMaxChunks=0, maxChunkSize=0;
-                split_fasta (4, mi->seq, mi->n_seq, &numOutChunks, &numMaxChunks, &maxChunkSize);
+                split_fasta (mi->seq, mi->n_seq, &numOutChunks, &numMaxChunks, &maxChunkSize);
                 fprintf (stderr, "MaxChunkSize %d, numOutChunks %d, max num of chunks per contig %d\n", maxChunkSize, numOutChunks, numMaxChunks);
 		FILE **aebFp = (FILE **)calloc ((numMaxChunks * mi->n_seq), sizeof (FILE *));
                 assert (aebFp != NULL);
@@ -389,7 +396,7 @@ int main(int argc, char *argv[])
 	fprintf(stderr, "\n[M::%s] Real time: %.3f sec; CPU: %.3f sec\n", __func__, realtime() - mm_realtime0, cputime());
 #ifdef USE_MPI
         MPI_Barrier(MPI_COMM_WORLD);
-        if (rank == 0)
+/*        if (rank == 0)
         {
                 int pid = getpid();
                 char line[2048];
@@ -406,7 +413,7 @@ int main(int argc, char *argv[])
                         fgets (line, 2048, statFile);
                 }
                 fclose (statFile);
-        }
+        }*/
         MPI_Finalize();
 #endif
 	return 0;

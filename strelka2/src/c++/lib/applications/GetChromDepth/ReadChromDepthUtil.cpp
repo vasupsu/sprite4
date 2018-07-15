@@ -363,9 +363,11 @@ double
 readChromDepthFromAlignment(
     const std::string& referenceFile,
     const std::string& alignmentFile,
+    const std::string& aebaibPrefix,
+    const int refSegs,
     const std::string& chromName)
 {
-    bam_streamer read_stream(alignmentFile.c_str(), referenceFile.c_str());
+    bam_streamer read_stream(alignmentFile.c_str(), referenceFile.c_str(), aebaibPrefix.c_str(), refSegs, 0, 1);
 
     const bam_hdr_t& header(read_stream.get_header());
     const bam_header_info bamHeader(header);

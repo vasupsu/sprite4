@@ -411,7 +411,7 @@ starling_run(
         {
             registrationIndices.push_back(sampleIndex);
         }
-        bamHeaders = registerAlignments(opt.alignFileOpt.alignmentFilenames, registrationIndices, streamData, rank, numTasks);
+        bamHeaders = registerAlignments(opt.alignFileOpt.alignmentFilenames, registrationIndices, opt.alignFileOpt.aebaibPrefix, opt.maxReferenceSegs, streamData, rank, numTasks);
 
         assert(not bamHeaders.empty());
         const bam_hdr_t& referenceHeader(bamHeaders.front());

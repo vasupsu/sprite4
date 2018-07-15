@@ -444,7 +444,7 @@ mm_idx_t *mm_idx_load(FILE *fp)
 #define ITERS 5
 	int i;
 	char magic[4];
-	uint32_t x[5],x2[5];
+	uint32_t x[5];
 	uint64_t sum_len = 0;
 	mm_idx_t *mi;
 
@@ -515,7 +515,7 @@ mm_idx_t *mm_idx_load(FILE *fp)
 	mi->n_seq = x[3];
 	mi->seq = (mm_idx_seq_t*)kcalloc(mi->km, mi->n_seq, sizeof(mm_idx_seq_t));
 	for (i = 0; i < mi->n_seq; ++i) {
-		uint8_t l,l2;
+		uint8_t l;
 		mm_idx_seq_t *s = &mi->seq[i];
 //		fread(&l2, 1, 1, fp);
 		l = *((uint8_t *)&buf[bufOfs]);
@@ -537,7 +537,7 @@ mm_idx_t *mm_idx_load(FILE *fp)
 	}
 	for (i = 0; i < 1<<mi->b; ++i) {
 		mm_idx_bucket_t *b = &mi->B[i];
-		uint32_t j, size2, size;
+		uint32_t j, size;
 		khint_t k;
 		idxhash_t *h;
 //		fread(&b->n, 4, 1, fp);
@@ -557,7 +557,7 @@ mm_idx_t *mm_idx_load(FILE *fp)
 		b->h = h = kh_init(idx);
 		kh_resize(idx, h, size);
 		for (j = 0; j < size; ++j) {
-			uint64_t x2[2], x[2];
+			uint64_t x[2];
 			int absent;
 //			fread(x2, 8, 2, fp);
 			memcpy (x, &buf[bufOfs], 2 * 8);

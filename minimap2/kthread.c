@@ -38,7 +38,7 @@ static inline long steal_work(kt_for_t *t)
 	return k >= t->n? -1 : k;
 }
 
-static void *ktf_worker(void *data)
+/*static void *ktf_worker(void *data)
 {
 	ktf_worker_t *w = (ktf_worker_t*)data;
 	long i;
@@ -50,7 +50,7 @@ static void *ktf_worker(void *data)
 	while ((i = steal_work(w->t)) >= 0)
 		w->t->func(w->t->data, i, w - w->t->w);
 	pthread_exit(0);
-}
+}*/
 
 void kt_for(int n_threads, void (*func)(void*,long,int), void *data, long n)
 {
@@ -100,7 +100,7 @@ typedef struct ktp_t {
 	pthread_cond_t cv;
 } ktp_t;
 
-static void *ktp_worker(void *data)
+/*static void *ktp_worker(void *data)
 {
 	ktp_worker_t *w = (ktp_worker_t*)data;
 	ktp_t *p = w->pl;
@@ -136,7 +136,7 @@ static void *ktp_worker(void *data)
 		pthread_mutex_unlock(&p->mutex);
 	}
 	pthread_exit(0);
-}
+}*/
 
 static void ktp_worker_omp(ktp_worker_t *w)
 {

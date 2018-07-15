@@ -33,4 +33,6 @@ double
 readChromDepthFromAlignment(
     const std::string& referenceFile,
     const std::string& alignmentFile,
+    const std::string& aebaibPrefix,
+    const int refSegs,
     const std::string& chromName);

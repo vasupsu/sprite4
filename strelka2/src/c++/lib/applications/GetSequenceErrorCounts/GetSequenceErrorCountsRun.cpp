@@ -121,6 +121,7 @@ getSequenceErrorCountsRun(
             std::ostringstream oss;
             oss << "WARNING: Multiple bam file inputs. Will be treated as single sample (with sampleName: " << opt.alignFileOpt.alignmentFilenames[0] << ")\n";
         }
+        std::cout << "getSequenceErrorCountsRun\n";
         std::vector<unsigned> registrationIndices(opt.alignFileOpt.alignmentFilenames.size(), 0);
         bamHeaders = registerAlignments(opt.alignFileOpt.alignmentFilenames, registrationIndices, streamData);
 

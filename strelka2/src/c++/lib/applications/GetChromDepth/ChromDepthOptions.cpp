@@ -59,6 +59,7 @@ parseOptions(
     std::string& errorMsg)
 {
     if (checkStandardizeInputFile(opt.alignmentFilename, "alignment", errorMsg)) return true;
+    if (checkStandardizeInputFile(opt.aebaibPrefix, "AEB, AIB", errorMsg)) return true;
     if (checkStandardizeInputFile(opt.referenceFilename, "reference fasta", errorMsg)) return true;
 
     if (vm.count("chrom"))
@@ -95,6 +96,10 @@ parseChromDepthOptions(
     req.add_options()
     ("align-file", po::value(&opt.alignmentFilename),
      "alignment file in BAM or CRAM format")
+    ("aln-prefix", po::value(&opt.aebaibPrefix),
+     "Path containing input AEB, AIB files")
+    ("max-ref-segs", po::value(&opt.maxReferenceSegs)->default_value(opt.maxReferenceSegs),
+     "Path containing input AEB, AIB files")
     ("chrom", po::value<chroms_t>(),
      "chromosome name. May be supplied more than once. At least one entry required.")
     ("output-file", po::value(&opt.outputFilename),

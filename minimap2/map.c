@@ -499,8 +499,8 @@ static void *worker_pipeline(void *shared, int step, void *in)
 {
 	int i, j, k;
     pipeline_t *p = (pipeline_t*)shared;
-    double sTime = realtime();
-    double sTime_cpu = cputime();
+//    double sTime = realtime();
+//    double sTime_cpu = cputime();
     if (step == 0) { // step 0: read sequences
 		int with_qual = (!!(p->opt->flag & MM_F_OUT_SAM) && !(p->opt->flag & MM_F_NO_QUAL));
 		int frag_mode = (p->n_fp > 1 || !!(p->opt->flag & MM_F_FRAG_MODE));
@@ -508,9 +508,8 @@ static void *worker_pipeline(void *shared, int step, void *in)
         s = (step_t*)calloc(1, sizeof(step_t));
 		#pragma omp critical (read_lock)
 		{
-//			fprintf (stderr, "\tstep %d start\n", step);
-			sTime = realtime();
-			sTime_cpu = cputime();
+//			sTime = realtime();
+//			sTime_cpu = cputime();
 			if (p->n_fp > 1) s->seq = mm_bseq_read_frag(p->n_fp, p->fp, p->mini_batch_size, with_qual, &s->n_seq, p->fI[p->end_chunk].offset);
 			else s->seq = mm_bseq_read2(p->fp[0], p->mini_batch_size, with_qual, frag_mode, &s->n_seq, p->fI[p->end_chunk].offset);
 		}
@@ -534,25 +533,23 @@ static void *worker_pipeline(void *shared, int step, void *in)
 					s->seg_off[s->n_frag++] = j;
 					j = i;
 				}
-     			fprintf (stderr, "%d\t1-worker_pipeline step %d real %.3lf sec cpu %.3lf sec\n",  p->rank, step, realtime()-sTime, cputime()-sTime_cpu);
+//     			fprintf (stderr, "%d\t1-worker_pipeline step %d real %.3lf sec cpu %.3lf sec\n",  p->rank, step, realtime()-sTime, cputime()-sTime_cpu);
 			return s;
 		} else free(s);
     } else if (step == 1) { // step 1: map
 		#pragma omp critical (map_lock)
 		{
-//			fprintf (stderr, "\tstep %d start\n", step);
-			sTime = realtime();
-			sTime_cpu = cputime();
+//			sTime = realtime();
+//			sTime_cpu = cputime();
 			kt_for(p->n_threads, worker_for, in, ((step_t*)in)->n_frag);
 		}
-		fprintf (stderr, "%d\t2-worker_pipeline step %d real %.3lf sec cpu %.3lf sec\n",  p->rank, step, realtime()-sTime, cputime()-sTime_cpu);
+//		fprintf (stderr, "%d\t2-worker_pipeline step %d real %.3lf sec cpu %.3lf sec\n",  p->rank, step, realtime()-sTime, cputime()-sTime_cpu);
 		return in;
     } else if (step == 2) { // step 2: output
 		#pragma omp critical (write_lock)
 		{
-//			fprintf (stderr, "\tstep %d start\n", step);
-			sTime = realtime();
-			sTime_cpu = cputime();
+//			sTime = realtime();
+//			sTime_cpu = cputime();
 			void *km = 0;
 	        step_t *s = (step_t*)in;
 			const mm_idx_t *mi = p->mi;
@@ -608,13 +605,12 @@ static void *worker_pipeline(void *shared, int step, void *in)
 			}
 			free (vfr); free (vor);
 			km_destroy(km);
-	 		fprintf (stderr, "%d\t3-worker_pipeline step %d real %.3lf sec cpu %.3lf sec\n",  p->rank, step, realtime()-sTime, cputime()-sTime_cpu);
+//	 		fprintf (stderr, "%d\t3-worker_pipeline step %d real %.3lf sec cpu %.3lf sec\n",  p->rank, step, realtime()-sTime, cputime()-sTime_cpu);
 			if (mm_verbose >= 3)
-				fprintf(stderr, "[M::%s::%.3f*%.2f] mapped %d sequences\n", __func__, realtime() - mm_realtime0, cputime() / (realtime() - mm_realtime0), s->n_seq);
+				fprintf(stderr, "[%d,%d:M::%s::%.3f*%.2f] mapped %d sequences\n", p->rank, p->cur_chunk, __func__, realtime() - mm_realtime0, cputime() / (realtime() - mm_realtime0), s->n_seq);
 			free(s);
 		}
 	}
-	fprintf (stderr, "%d\t4-worker_pipeline step %d real %.3lf sec cpu %.3lf sec\n",  p->rank, step, realtime()-sTime, cputime()-sTime_cpu);
     return 0;
 }
 
@@ -659,14 +655,14 @@ int mm_map_file_frag(const mm_idx_t *idx, int n_segs, const char **fn, const mm_
 	pl.mini_batch_size = opt->mini_batch_size;
 	pl_threads = n_threads == 1? 1 : (opt->flag&MM_F_2_IO_THREADS)? 3 : 2;
 	assert (numChunks%numTasks == 0);
-	int numChunksPerRank = numChunks/numTasks;
+//	int numChunksPerRank = numChunks/numTasks;
 	for (chunk = rank; chunk < numChunks; chunk+=numTasks)
 	{	
 //		pl.cur_chunk = rank*numChunksPerRank;
 //		pl.end_chunk = (rank+1)*numChunksPerRank;
 		pl.cur_chunk = chunk;
 		pl.end_chunk = chunk+1;
-		fprintf (stderr, "rank %d numtasks %d start_chunk %d end_chunk %d\n", rank, numTasks, pl.cur_chunk, pl.end_chunk);
+//		fprintf (stderr, "rank %d numtasks %d start_chunk %d end_chunk %d\n", rank, numTasks, pl.cur_chunk, pl.end_chunk);
 		for (i = 0; i < n_segs; ++i) {
 //			fprintf (stderr, "rank %d seg %d open file %s\n", rank, i, fn[i]);
 			if (i==0)
@@ -685,7 +681,7 @@ int mm_map_file_frag(const mm_idx_t *idx, int n_segs, const char **fn, const mm_
 				return -1;
 			}
 		}
-		fprintf (stderr, "Rank %d chunk %d\n", rank, pl.cur_chunk);
+//		fprintf (stderr, "Rank %d chunk %d\n", rank, pl.cur_chunk);
 		kt_pipeline(pl_threads, worker_pipeline, &pl, 3);
 		free(pl.str.s);
 		pl.str.s=NULL;

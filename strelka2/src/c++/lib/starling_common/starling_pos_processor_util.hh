@@ -47,6 +47,8 @@ std::vector<std::reference_wrapper<const bam_hdr_t> >
 registerAlignments(
     const std::vector<std::string>& alignmentFilename,
     const std::vector<unsigned>& registrationIndices,
+    const std::string& aebaibPrefix,
+    const int maxReferenceSegs,
     HtsMergeStreamer& streamData, int rank, int numTasks);
 
 /// re-segment each target region into 0-many target sub-regions, divided on each large gap

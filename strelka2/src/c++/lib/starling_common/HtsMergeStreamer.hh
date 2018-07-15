@@ -85,9 +85,9 @@ T* htsTypeFactory(const char* htsFilename, const char* /*referenceFilename*/, co
     return new T(htsFilename, region);
 }
 template <typename T>
-T* htsTypeFactory(const char* htsFilename, const char* /*referenceFilename*/, const char* region, int rank, int numTasks, const bool /*isRequireNormalized*/)
+T* htsTypeFactory(const char* htsFilename, const char* /*referenceFilename*/, const char *aebaibPrefix, const int maxReferenceSegs, const char* region, int rank, int numTasks, const bool /*isRequireNormalized*/)
 {
-    return new T(htsFilename, rank, numTasks, region);
+    return new T(htsFilename, aebaibPrefix, maxReferenceSegs, rank, numTasks, region);
 }
 template <>
 inline bam_streamer* htsTypeFactory(const char* htsFilename, const char* referenceFilename, const char* region, const bool /*isRequireNormalized*/)
@@ -95,9 +95,9 @@ inline bam_streamer* htsTypeFactory(const char* htsFilename, const char* referen
     return new bam_streamer(htsFilename, referenceFilename, region);
 }
 template <>
-inline bam_streamer* htsTypeFactory(const char* htsFilename, const char* referenceFilename, const char* region, int rank, int numTasks, const bool /*isRequireNormalized*/)
+inline bam_streamer* htsTypeFactory(const char* htsFilename, const char* referenceFilename, const char *aebaibPrefix, const int maxReferenceSegs, const char* region, int rank, int numTasks, const bool /*isRequireNormalized*/)
 {
-    return new bam_streamer(htsFilename, referenceFilename, rank, numTasks, region);
+    return new bam_streamer(htsFilename, referenceFilename, aebaibPrefix, maxReferenceSegs, rank, numTasks, region);
 }
 template <>
 inline vcf_streamer* htsTypeFactory(const char* htsFilename, const char* /*referenceFilename*/, const char* region, const bool isRequireNormalized)
@@ -137,10 +137,10 @@ struct HtsMergeStreamer
     const bam_streamer&
     registerBam(
         const std::string& bamFilename,
-        const unsigned index, int rank, int numTasks)
+        const unsigned index, const std::string& aebaibPrefix, int maxReferenceSegs, int rank, int numTasks)
     {
-//        std::cout << "registerBam_rank" << std::endl;
-        return registerHtsType(bamFilename, index,_data._bam, rank, numTasks);
+        std::cout << "registerBam_rank" << std::endl;
+        return registerHtsType(bamFilename, index, aebaibPrefix, maxReferenceSegs, _data._bam, rank, numTasks);
     }
 
     const bed_streamer&
@@ -302,12 +302,13 @@ private:
     {
         return _order[orderIndex].userIndex;
     }
-//vasu
     template <typename T>
     const T&
     registerHtsType(
         const std::string& htsFilename,
         const unsigned index,
+        const std::string& aebaibPrefix,
+        const int maxReferenceSegs,
         std::vector<std::unique_ptr<T>>& htsStreamerVec,
         int rank, int numTasks,
         const bool isRequireNormalized = false)
@@ -316,7 +317,7 @@ private:
         assert(! _isStreamBegin);
         const unsigned htsTypeIndex(htsStreamerVec.size());
         const unsigned orderIndex(_order.size());
-        htsStreamerVec.emplace_back(HTS_TYPE::htsTypeFactory<T>(htsFilename.c_str(), _referenceFilename.c_str(), getRegionPtr(), rank, numTasks, isRequireNormalized));
+        htsStreamerVec.emplace_back(HTS_TYPE::htsTypeFactory<T>(htsFilename.c_str(), _referenceFilename.c_str(), aebaibPrefix.c_str(), maxReferenceSegs, getRegionPtr(), rank, numTasks, isRequireNormalized));
         _order.emplace_back(htsType, index, htsTypeIndex);
         queueItem(orderIndex);
         return *(htsStreamerVec.back());

@@ -29,6 +29,8 @@
 struct ChromDepthOptions
 {
     std::string alignmentFilename;
+    std::string aebaibPrefix;
+    int maxReferenceSegs = 500;
     std::vector<std::string> chromNames;
 
     std::string referenceFilename;

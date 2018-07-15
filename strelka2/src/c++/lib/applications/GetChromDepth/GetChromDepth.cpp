@@ -43,7 +43,7 @@ getChromDepth(const ChromDepthOptions& opt)
     std::vector<double> chromDepth;
     for (const std::string& chromName : opt.chromNames)
     {
-        chromDepth.push_back(readChromDepthFromAlignment(opt.referenceFilename, opt.alignmentFilename, chromName));
+        chromDepth.push_back(readChromDepthFromAlignment(opt.referenceFilename, opt.alignmentFilename, opt.aebaibPrefix, opt.maxReferenceSegs, chromName));
     }
 
     OutStream outs(opt.outputFilename);

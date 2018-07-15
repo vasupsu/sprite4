@@ -33,6 +33,8 @@ getOptionsDescription(
     desc.add_options()
     ("align-file", po::value<AlignmentFileOptions::files_t>(),
      "alignment file in BAM or CRAM format (may be specified multiple times)")
+    ("aln-prefix", po::value<std::string>(),
+     "Path containing input AEB, AIB files")
     ;
     return desc;
 }
@@ -48,6 +50,8 @@ parseOptions(
     {
         opt.alignmentFilenames = (boost::any_cast<AlignmentFileOptions::files_t>(vm["align-file"].value()));
     }
+    if (vm.count("aln-prefix"))
+        opt.aebaibPrefix = (boost::any_cast<std::string>(vm["aln-prefix"].value()));
 }
 
 
@@ -58,7 +62,11 @@ checkOptions(
     std::string& errorMsg)
 {
     errorMsg.clear();
-    if (opt.alignmentFilenames.empty())
+    if (opt.aebaibPrefix.empty())
+    {
+        errorMsg="Must specify AEB, AIB prefix (--aln-prefix arg)";
+    }
+    else if (opt.alignmentFilenames.empty())
     {
         errorMsg="Must specify at least one input alignment file";//align-file remove
     }
