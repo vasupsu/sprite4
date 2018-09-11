@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <getopt.h>
 #include <stdint.h>
 #include <fcntl.h>
 #include <sys/stat.h>
@@ -17,9 +18,9 @@ typedef struct {
 
 //long chunkSize=(long)25500000000;//reads
 int readSize=230;
-int numPartitions=16;
-size_t totalFastqSize = 0;
-int numPEFiles, numSEFiles, numInterleavedFiles;
+int chunkSize=50000000;
+int numChunks=1;
+int numPEFiles=0;//0 - single ended; 1 - interleaved; 2 - separate paired end fastq files
 size_t *fileSize=NULL;
 char **fileNames = NULL;
 
@@ -27,80 +28,101 @@ void getFileIndex (int chunkNum, size_t sizePerChunk, int numFiles, size_t *file
 {
 	int currentFileInd=0;
 	size_t bytesRemaining = sizePerChunk * chunkNum;
-	int fileFactor=1;
-	if (currentFileInd < numPEFiles)
-		fileFactor=2;
-	while (bytesRemaining >= fileSize[currentFileInd]*fileFactor)
-	{
-		// printf ("curFileInd %d Prev bytesRemaining %lu  ", currentFileInd, bytesRemaining);
-		bytesRemaining -= fileSize[currentFileInd]*fileFactor;
-		if (currentFileInd < numPEFiles)
-		{
-			currentFileInd+=2;
-		}
-		else
-			currentFileInd++;
-		if (currentFileInd < numPEFiles)
-			fileFactor=2;
-		else
-			fileFactor=1;
-		// printf ("After bytesRemaining %lu\n", bytesRemaining);
-	}
 	result->fileNo=currentFileInd;
-	result->offset=bytesRemaining/fileFactor;
+	result->offset=bytesRemaining;
 }
 int file2No=1;
 size_t file2Ofs=0;
-size_t findOfsOtherEnd (int fileNo, size_t offset, char *readName)
+#define READ_SIZE_MAX 100000000
+size_t findOfsOtherEnd (int fileNo, size_t offset, char *readName, FILE *fp)
 {
-	printf ("Begin findOfsOtherEnd %s\n", readName);
-	size_t delta = fileSize[fileNo]*1/10000;
+	int i=0;
+//	printf ("Begin findOfsOtherEnd %s\n", readName);
+	size_t delta = fileSize[1]/numChunks/2;
+	if (delta > READ_SIZE_MAX) delta = READ_SIZE_MAX;
 	char *fileBuffer = (char *)malloc(2*delta);
 	assert (fileBuffer != NULL);
-	char curReadName[100];
-	FILE *fp = fopen (fileNames[fileNo+1], "r");
+	char curReadName[1000];
+
         assert (fp != NULL);
+	fseek (fp, offset, SEEK_SET);
+	fgets (fileBuffer, 1000, fp);
+	fileBuffer [strlen(fileBuffer)-1]='\0';
+//	printf ("file2:%s\nfile1:%s\n", fileBuffer, readName);
+	if ((strlen(fileBuffer)==strlen(readName)) && (strlen(fileBuffer)>2))
+	{
+		int equal=1;
+		for (i=0; i<strlen (readName); i++)
+		{
+			if (fileBuffer[i]!=readName[i])
+			{
+				equal=0;
+				break;
+			}
+			if ((fileBuffer[i]==' ') || (fileBuffer[i]=='/')) break;
+		}
+		if (equal) return offset;
+	}
+	
+	for (i=0; i<strlen (readName); i++)
+	{
+		if ((readName[i] == ' ') || (readName[i]=='/')) 
+		{
+			readName[i] = '\0';
+			break;
+		}
+	}
 	
 	size_t startOfs=0,len=0;
 	if (offset >= delta)
 		startOfs = offset-delta;
 	else
 		startOfs = 0;	
-	len = fileSize[fileNo+1] - startOfs;
+	len = fileSize[1] - startOfs;
 
 	if ((offset + delta) < fileSize[fileNo+1])
 		len = offset + delta - startOfs;
-	printf ("File1 ofs %lu seekOfs %lu, len %lu\n", offset, startOfs, len);
+//	printf ("File1 ofs %lu seekOfs %lu, len %lu\n", offset, startOfs, len);
         fseek(fp, startOfs, SEEK_SET);
 	fread (fileBuffer, 1, len, fp);
-	fclose (fp);
-	size_t i=0;
+	i=0;
 	
-	while ((i<len) && ((fileBuffer[i] != '\n') || (fileBuffer[i+1] != '+') || (fileBuffer[i+2] != '\n')/* || (fileBuffer[i+2] != 'E') || (fileBuffer[i+3]!='R')*/))
+	while ((i<len) && ((fileBuffer[i] != '\n') || (fileBuffer[i+1] != '+')))
 	{
 		i++;
 	}
 	
 	assert (i<len);
-	fileBuffer[i+100]='\0';
-	printf ("fileBuffer *%s*\n", &fileBuffer[i]);
+//	fileBuffer[i+100]='\0';
+//	printf ("fileBuffer *%s*\n", &fileBuffer[i]);
 	i++;
 	while (fileBuffer[i] != '\n') i++;
 	i++;
 	while (fileBuffer[i] != '\n') i++;
         i++;
-	assert (i < len);
-	
+	fileBuffer[i+100]='\0';
+//	printf ("fileBuffer *%s*\n", &fileBuffer[i]);
+
+	if (fileBuffer[i] != '@')
+	{
+		while (fileBuffer[i] != '\n') i++;i++;
+		assert (fileBuffer[i]=='+');
+		while (fileBuffer[i] != '\n') i++;i++;
+		while (fileBuffer[i] != '\n') i++;i++;
+	}
+	assert ((fileBuffer[i]=='@') && (i < len));
 	int readNameInd=0;
 	size_t j=i;
 	while (fileBuffer[j] != '\n')
 	{
 		curReadName[readNameInd++] = fileBuffer[j];
 		j++;
+		if ((fileBuffer[j] == ' ') || (fileBuffer[j] == '/'))
+			break;
 	}
 //	assert (curReadName[readNameInd-1] == '2');
-	curReadName[readNameInd-2]='\0';
-	printf ("curReadName *%s*\n", curReadName);
+	curReadName[readNameInd]='\0';
+//	printf ("curReadName *%s*\n", curReadName);
 
 	while (i < len)
 	{
@@ -130,12 +152,14 @@ size_t findOfsOtherEnd (int fileNo, size_t offset, char *readName)
 		{
 			curReadName[readNameInd++] = fileBuffer[j];
 			j++;
+			if ((fileBuffer[j] == ' ') || (fileBuffer[j] == '/'))
+				break;
 		}
 //		assert (curReadName[readNameInd-1] == '2');
-		curReadName[readNameInd-2]='\0';
+		curReadName[readNameInd]='\0';
 	}
-	printf ("\t2-%s Pos %lu\n", curReadName, startOfs+i);
-	printf ("findOfsOtherEnd end\n");
+//	printf ("\t2-%s Pos %lu\n", curReadName, startOfs+i);
+//	printf ("findOfsOtherEnd end\n");
 	free (fileBuffer);
 	return (startOfs+i);
 }
@@ -146,47 +170,67 @@ int main(int argc, char **argv) {
 	int maxReadSize=300;
 	//FILE *fp;
 	struct stat buf;
+	static struct option long_options[] =
+	{
+//		{"interleaved", required_argument,       0, 'p'},
+		{"numchunks", required_argument,       0, 'c'},
+		{0, 0, 0, 0}
+	};
+	int c=0;
+	while (1)
+	{
+		int option_index = 0;
+		c = getopt_long (argc, argv, "c:", long_options, &option_index);
+		if (c==-1) break;
+		switch (c)
+		{
+			case 'c':
+				printf ("numchunks: %d\n", atoi(optarg));
+				numChunks = atoi(optarg);
+				break;
+			default:
+				printf ("unrecognized option -%c\n", c);
+				return 1;
+		}
+	}
+	int numPosArgs = argc-optind;
+	if ((numPosArgs > 2) || (numPosArgs == 0) || ((numPosArgs > 1) && numPEFiles))
+	{
+		fprintf (stderr, "\n");
+		fprintf (stderr, "Usage: %s [options] <in1.fq> [in2.fq]\n", argv[0]);
+		fprintf (stderr, "Options:\n\n");
+//		fprintf (stderr, "      -p            indicate in1.fq is an interleaved paired-end file. in2.fq argument not required\n");
+		fprintf (stderr, "      -c INT        number of chunks [1]\n");
+		return 0;
+	}
+	if (numPosArgs == 2)
+		numPEFiles = 2;
+//	printf ("numPEFiles %d\n", numPEFiles);
 	//char readFile[500];
 
-	if (argc < 3) {
-		printf("Usage: %s numPartitions numPEFiles numSEFiles "
-			"numInterleavedFiles a.1.fastq a.2.fastq b.1.fastq "
-			"b.2.fastq ...\n", argv[0]);
-		exit(1);
-	}
-
-	numPartitions = atoi(argv[1]);
-	assert(numPartitions > 0);
-	int numChunks=numPartitions;
-	//int k;
 	int i;
-	numPEFiles = atoi(argv[2])*2;
-	numSEFiles = atoi(argv[3]);
-	numInterleavedFiles = atoi(argv[4]);
-	argv = &argv[4];
-	argc-=4;
-	printf ("Argc %d\n", argc);
+	argv = &argv[optind];
+	argc-=optind;
+//	printf ("Argc %d\n", argc);
 
-	fileNames = (char **)malloc((argc-1) * sizeof(char *));
-	fileSize = (size_t *)malloc((argc-1) * sizeof(size_t));
+	fileNames = (char **)malloc(argc * sizeof(char *));
+	fileSize = (size_t *)malloc(argc * sizeof(size_t));
 	assert (fileNames != NULL);
 	assert (fileSize != NULL);
-	for (i=1; i<argc; i++)
+	for (i=0; i<argc; i++)
 	{
-		fileNames[i-1]=(char *)malloc(500);
-		assert (fileNames[i-1] != NULL);
-        	sprintf (fileNames[i-1], "%s", argv[i]);
-	        int status = stat (fileNames[i-1], &buf);
-		printf ("File %s\n", fileNames[i-1]);
+		fileNames[i]=(char *)malloc(500);
+		assert (fileNames[i] != NULL);
+        	sprintf (fileNames[i], "%s", argv[i]);
+	        int status = stat (fileNames[i], &buf);
         	assert (status == 0);
-		fileSize[i-1]=buf.st_size;
-		printf ("file %s Size %lu\n", fileNames[i-1], buf.st_size);
+		fileSize[i]=buf.st_size;
+		printf ("file %s Size %lu\n", fileNames[i], buf.st_size);
 //		if (i <= numPEFiles)
 //			if ((i % 2) == 0) continue;
-		totalFastqSize += buf.st_size;
 	}
-	printf ("size %lu\n", totalFastqSize);
-	size_t sizePerChunk = totalFastqSize/numChunks;
+	size_t sizePerChunk = fileSize[0]/numChunks;
+//	printf ("size %lu sizePerChunk %lu\n", fileSize[0], sizePerChunk);
 	size_t j;
 	
 	char *readChunk = (char *)malloc(5000);
@@ -199,107 +243,74 @@ int main(int argc, char **argv) {
 	FILE *fpOut = fopen(idxFile, "w");
 	assert (fpOut != NULL);
 	//int eof=0;
-	int interleaved=0;
 	//size_t curOfs=2;
 	fileIndex fI;
 	fI.fileNo=0;
 	fI.offset=0;
-#if 0
-	fI.kmerFreqCount = (uint64_t *) malloc((1048576+2)*sizeof(uint64_t));
-	assert(fI.kmerFreqCount != NULL);
-#endif
 
-//	bzero (fI.kmerFreqCount, (1048576+2)*sizeof(uint32_t));
 	int flag=0;	
 	char curReadName[100];
+	FILE *fp = fopen (fileNames[0], "r");
+	assert (fp != NULL);
+	FILE *fp2 = NULL;
+	if (numPEFiles == 2)
+	{
+		fp2 = fopen (fileNames[1], "r");
+		assert (fp2 != NULL);
+	}
 	for (i=0; i<numChunks; i++)
 	{
 		flag=0;
 		getFileIndex (i, sizePerChunk, argc-1, fileSize, &fI);
-		if (fI.fileNo  >= (numPEFiles + numSEFiles))
-			interleaved=1;
-		if ((fileSize[fI.fileNo]-fI.offset) < maxReadSize)
-		{
-//			printf ("fileNo+1 %d, argc %d\n", fI.fileNo+1, argc);
-			if (fI.fileNo+1 == argc-1) break;
-			fI.fileNo++;
-			fI.offset=0;
-		}
-		printf ("chunk %d: File %d, Offset %lu\n", i, fI.fileNo, fI.offset);
 
-		if (i==0) 
+		if (i==0)
 		{
 			fI.offset2=0;
-#if 0
-			fwrite(&(fI.fileNo), sizeof(int), 1, fpOut);
-			fwrite(&(fI.offset), sizeof(size_t), 1, fpOut);
-			fwrite(&(fI.offset2), sizeof(size_t), 1, fpOut);
-			fwrite(&(fI.readId), sizeof(uint32_t), 1, fpOut);
-			fwrite(fI.kmerFreqCount, sizeof(uint64_t), 1048576+2,
-					fpOut);
-#endif
-			printf ("size of fileindex is %lu, actual %lu\n", 
-					sizeof(fileIndex), 
-					sizeof(int)+2*sizeof(size_t)+sizeof(uint32_t)
-					+1048578*sizeof(uint32_t));
-			assert(sizeof(fileIndex) ==
-					(sizeof(int)+2*sizeof(size_t)+sizeof(uint32_t)));
-
 			fwrite (&fI, sizeof(fileIndex), 1, fpOut);
 			continue;
 		}
-		FILE *fp = fopen (fileNames[fI.fileNo], "r");
-		assert (fp != NULL);
 		fseek(fp, fI.offset, SEEK_SET);
 		//curOfs=startOfs;
 		size_t nread =fread (readChunk, 1, 3000, fp);
-		printf ("nread %lu\n", nread);
-		assert (nread > maxReadSize);
+
+//		printf ("nread %lu\n", nread);
+//		assert (nread > maxReadSize);
 		int k=0;
 		for (j=0; j<nread; j++)
 		{
-			if ((readChunk[j]=='\n') && (readChunk[j+1]=='+')/* && (readChunk[j+2]=='\n')*/)
+			if ((readChunk[j]=='\n') && (readChunk[j+1]=='+'))
 			{
-				flag=1;
-				j=j+2;
-				while (readChunk[j] != '\n')
+//				if (readChunk[j+2]=='\n')
+				{
+					flag=1;
+					j=j+2;
+					while (readChunk[j] != '\n')
+						j++;
 					j++;
-				j++;
+				}
 			}
-			k=0;
+                        k=0;
 			if (flag && (readChunk[j]=='\n'))
 			{
 				j++;k++;
-//				printf ("Ofs %lu, interleaved %d\n", fI.offset+j, interleaved);
-				if (interleaved)
-				{	
-					for (k=j; readChunk[k]!='/'; k++);
-					if (readChunk[k+1]=='2')
-					{
-						flag=0;
-						j=k;
-					}
-					else
-						break;
-				}
-				else
-					break;
+				if (readChunk[j] != '@') flag = 0;
+				else break;
 			}
 		}
-		if ((2*k+30) < maxReadSize) maxReadSize = 2*k+30;
+//		if ((2*k+30) < maxReadSize) maxReadSize = 2*k+30;
 		assert(flag==1);
 		writeOfs = fI.offset+j;
-		printf ("writeOfs %lu\n", writeOfs);
+//		printf ("writeOfs %lu\n", writeOfs);
 		fI.offset = writeOfs;
 		int readInd=0;
 		while (readChunk[j]!='\n')
 			curReadName[readInd++]=readChunk[j++];
 //		assert (curReadName[readInd-1]=='1');
-		curReadName[readInd-2]='\0';
+		curReadName[readInd]='\0';
 		printf ("FIle %d curReadName %s\n", fI.fileNo, curReadName);	
 		if (fI.fileNo < numPEFiles)
 		{	
-			size_t ofs2=findOfsOtherEnd (fI.fileNo, fI.offset, curReadName);
+			size_t ofs2=findOfsOtherEnd (fI.fileNo, fI.offset, curReadName, fp2);
 			fI.offset2 = ofs2;
 		}
 		else
@@ -307,54 +318,29 @@ int main(int argc, char **argv) {
 			fI.offset2 = 0;
 		}
 
-#if 0
-		fwrite(&fI.fileNo, sizeof(int), 1, fpOut);
-		fwrite(&fI.offset, sizeof(size_t), 1, fpOut);
-		fwrite(&fI.offset2, sizeof(size_t), 1, fpOut);
-		fwrite(&fI.readId, sizeof(uint32_t), 1, fpOut);
-		fwrite(fI.kmerFreqCount, sizeof(uint64_t), 1048576+2,
-					fpOut);
-#endif
 		fwrite (&fI, sizeof(fileIndex), 1, fpOut);
 //		printf ("P%d - %d %ld\n", rank, count, startOfs+i);
 		printf ("Chunk %d: File %d, Offset %lu,%lu\n", i, fI.fileNo, fI.offset, fI.offset2);
-		fclose (fp);
 	}
-	if ((argc-1) == numPEFiles)
-	{
-		fI.fileNo = argc-3;
-		fI.offset = fileSize[argc-3];
-		fI.offset2 = fileSize[argc-2];
-	}
-	else
-	{
-		fI.fileNo = argc-2;
-		fI.offset = fileSize[argc-2];
-		fI.offset2 = 0;
-	}
+	fclose (fp);
+	if (fp2) fclose (fp2);
 
-#if 0
-	fwrite(&fI.fileNo, sizeof(int), 1, fpOut);
-	fwrite(&fI.offset, sizeof(size_t), 1, fpOut);
-	fwrite(&fI.offset2, sizeof(size_t), 1, fpOut);
-	fwrite(&fI.readId, sizeof(uint32_t), 1, fpOut);
-	fwrite(fI.kmerFreqCount, sizeof(uint64_t), 1048576+2,
-				fpOut);
-#endif
+	fI.fileNo = 0;
+	fI.offset = fileSize[0];
+	if (numPEFiles == 2)
+		fI.offset2 = fileSize[1];
+	else
+		fI.offset2 = 0;
 
 	fwrite (&fI, sizeof(fileIndex), 1, fpOut);
 	printf ("Chunk %d: File %d, Offset %lu,%lu\n", i, fI.fileNo, fI.offset, fI.offset2);
 	free (readChunk);
-	for (i=0; i<(argc-1); i++)
+	for (i=0; i<argc; i++)
 	{
 		free (fileNames[i]);
 	}
 	free(fileNames);
-#if 0
-	free(fI.kmerFreqCount);
-#endif
 	free (fileSize);
 	fclose (fpOut);
-
 	return 0;
 }
