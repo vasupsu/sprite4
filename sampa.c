@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <getopt.h>
 #include <unistd.h>
 #include <stdlib.h>
 #include <errno.h>
@@ -21,7 +22,7 @@ int NUM_FILES=0;
 int max_out_files = 0;
 int numOutChunks, numMaxChunks, maxChunkSize;
 char fai_file[300];
-int numtasks=1, rank=0, numThreads = 24, rSize=50000;
+int numtasks=1, rank=0, numThreads = 1, rSize=50000;
 typedef struct 
 {
 	char *fileName;
@@ -116,19 +117,47 @@ int main(int argc, char **argv)
 {
 	struct stat buf;
 	int i=0,j=0,k=0;
-	if (argc != 5)
+	static struct option long_options[] =
 	{
-		printf ("Args: <maxOutFiles> <ref.fasta.fai> <ain,aeb file prefix> <#BWA MPI processes>\n");
-                printf ("maxOutFiles - Max number of output files per process\nref.fasta.fai - Absolute path of the fai file corresponding to the input fasta file.\naeb,aib file prefix - prefix of the filename of aeb and aib files created by Prune.\n#BWA MPI processes - Number of MPI tasks for PRUNE run\n");
+		{"nthreads", required_argument,       0, 't'},
+		{0, 0, 0, 0}
+	};
+	int c=0;
+	while (1)
+	{
+		int option_index = 0;
+		c = getopt_long (argc, argv, "t:", long_options, &option_index);
+		if (c==-1) break;
+		switch (c)
+		{
+			case 't':
+				numThreads = atoi(optarg);
+				break;
+			default:
+				printf ("unrecognized option -%c\n", c);
+				return 1;
+		}
+	}
+	if (optind + 4 != argc)
+	{
+		fprintf (stderr, "\n");
+                fprintf (stderr, "Usage: sampa [options] <maxOutFiles> <ref.fasta.fai> <ain,aeb file prefix> <#MAP MPI processes>\n");
+                fprintf (stderr, "Positional arguments:\n\n");
+                fprintf (stderr, "maxOutFiles           Max number of output files per process\n");
+                fprintf (stderr, "ref.fasta.fai         Absolute path of the fai file corresponding to the input fasta file\n");
+                fprintf (stderr, "aeb,aib file prefix   prefix of the filename of aeb and aib files created by MAP step\n");
+                fprintf (stderr, "#MAP MPI processes    Number of MPI tasks for Minimap2 run\n");
+                fprintf (stderr, "\nOptions:\n\n");
+                fprintf (stderr, "      -t INT          number of threads [1]\n");
 		return 0;
 	}
-	max_out_files = atoi (argv[1]);
-	strcpy(fai_file, argv[2]);
+	max_out_files = atoi (argv[optind]);
+	strcpy(fai_file, argv[optind+1]);
 	FILE *fp_fai = fopen(fai_file, "r");
 	assert(fp_fai != NULL);
-	strcpy (sam_prefix, argv[3]);
-	bwa_P = atoi(argv[4]);
-	
+	strcpy (sam_prefix, argv[optind+2]);
+	bwa_P = atoi(argv[optind+3]);
+	printf ("FAI: %s\nMAX_SEGS: %d\nPrefix path: %s\nMinimap2 tasks: %d\n", fai_file, max_out_files, sam_prefix, bwa_P);
 #ifdef USE_MPI
 	MPI_Init(&argc,&argv);
         MPI_Comm_size(MPI_COMM_WORLD,&numtasks);
