@@ -372,10 +372,11 @@ split_aebaib3()
     assert (rSize%50000 == 0);//50000 - hist file range created by sampa
     int numSegsPerRegion = rSize/50000;
     assert (numSegsPerRegion > 0);
+//    std::cout << "numcontigs " << nContigs << " numMaxChunks " << numMaxChunks << std::endl;
     for (int s=0; s<nContigs*numMaxChunks; s++)
     {
         int i = s/numMaxChunks;
-        if (i>24) break;
+//        if (i>24) break;
         int j = s%numMaxChunks;
         char fname[10000];
         sprintf (fname, "%s/C%d_%d_sorted.hist", aebaib_prefix.c_str(), i, j);
@@ -591,8 +592,8 @@ split_fasta()
 	const bam_hdr_t &bhdr = get_header();
 	int numContigs = bhdr.n_targets;
 	nContigs = numContigs;
-//	std::cout << "NumContigs " << numContigs << std::endl;
-	if (numContigs < 93) totalSegments=numContigs;
+//	std::cout << "NumContigs " << numContigs << " totalSegments " << totalSegments << std::endl;
+//	if (numContigs < 93) totalSegments=numContigs;
 	uint32_t maxContigSize = 0;
 	int i=0;
 	for (i=0; i<numContigs; i++)
@@ -626,6 +627,7 @@ split_fasta()
 	numOutChunks = curChunks;
 	numMaxChunks = maxChunksPerContig;
 	maxChunkSize = curContigSize;
+//	std::cout << "numOutChunks " << numOutChunks << " numMaxChunks " << numMaxChunks << " maxChunkSize " << maxChunkSize << std::endl;
 }
 
 static
@@ -751,7 +753,7 @@ size_t bam_streamer::getFirstRecordIndexForRange (FILE *fp, int isaibfile, size_
     }
     if (l != 0)
     {
-//       std::cout << "l,m,h: " << l << "(" << prevpos << ")"  << "," << m << "(" << mpos << ")" << "," << h << "(" << nextpos << ")" << " lastElem " << lastrec << " key " << key << std::endl;
+       std::cout << "l,m,h: " << l << "(" << prevpos << ")"  << "," << m << "(" << mpos << ")" << "," << h << "(" << nextpos << ")" << " lastElem " << lastrec << " key " << key << std::endl;//vasu
     }
     assert ((l==0) || (l==(lastrec+1)));
     return l;
@@ -771,7 +773,7 @@ resetRegion(const char* region)
         curTid = referenceContigId;
         curStart = beginPos;
         curEnd = endPos;
-//        std::cout << "curTid " << curTid << " beginPos " << beginPos << " endPos " << endPos <<  std::endl;
+        std::cout << "curTid " << curTid << " beginPos " << beginPos << " endPos " << endPos <<  std::endl;
 	
 	startFile = beginPos / maxChunkSize;
 	endFile = endPos / maxChunkSize;
