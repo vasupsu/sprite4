@@ -128,7 +128,7 @@ void getReads (char *fasta_file, long *offsets, long *lengths, int numContigs, b
 			if (readStr[readOfs] != '\n') readOfs++;
 		}
 		readStr[readLen] = '\0';
-		printf ("Contig %d: %ld:%s\n", i, startOfs+1, readStr);
+//		printf ("Contig %d: %ld:%s\n", i, startOfs+1, readStr);
 		aeb2bam (b1, (int)startOfs+1, readLen, readStr, i, hdr, fpOut);
 	}
 	fclose (fp_fasta);
@@ -158,7 +158,7 @@ int main(int argc, char **argv)
 		fgets(line, 200, fp_fai);
 	}
 	fclose(fp_fai);
-	printf ("# contigs: %d\n", NUM_CONTIGS);
+//	printf ("# contigs: %d\n", NUM_CONTIGS);
 	
 	long *offsets = (long *)malloc (NUM_CONTIGS * sizeof(long));
 	assert (offsets != NULL);
@@ -174,7 +174,7 @@ int main(int argc, char **argv)
 	while (!feof(fp_fai))
 	{
 		sscanf(line, "%s\t%ld\t%ld", contigName, &length, &start);
-		printf ("%s\t%ld\t%ld\n", contigName, length, start);
+//		printf ("%s\t%ld\t%ld\n", contigName, length, start);
 		offsets[contigNo] = start;
 		lengths[contigNo] = length;
 		sprintf (tStr, "@SQ\tSN:%s\tLN:%d\n", contigName, length);

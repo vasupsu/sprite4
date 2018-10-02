@@ -307,7 +307,7 @@ int main(int argc, char **argv) {
 			curReadName[readInd++]=readChunk[j++];
 //		assert (curReadName[readInd-1]=='1');
 		curReadName[readInd]='\0';
-		printf ("FIle %d curReadName %s\n", fI.fileNo, curReadName);	
+//		printf ("FIle %d curReadName %s\n", fI.fileNo, curReadName);	
 		if (fI.fileNo < numPEFiles)
 		{	
 			size_t ofs2=findOfsOtherEnd (fI.fileNo, fI.offset, curReadName, fp2);

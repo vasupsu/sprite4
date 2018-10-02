@@ -94,8 +94,8 @@ void split_fasta (int numChunks, fileInfo *anns, int numContigs, int *numOutChun
                 {
                         curChunks += (anns[i].seqLength/curContigSize)+(anns[i].seqLength%curContigSize > 0);
                 }
-		if (rank == 0)
-	                printf ("curChunkSize %d --> numChunks %d\n", curContigSize, curChunks);
+//		if (rank == 0)
+//	                printf ("curChunkSize %d --> numChunks %d\n", curContigSize, curChunks);
                 if (curChunks < numChunks)
                         curContigSize = curContigSize / 2;
         }
