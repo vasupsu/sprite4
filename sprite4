@@ -1,0 +1,504 @@
+#!/bin/bash
+set -e
+
+function source_binaries() {
+	SPRITE4_SCRIPT=`which $0`
+	SPRITE4_HOME=`dirname $SPRITE4_SCRIPT`
+	MPIRUN=`which mpirun || true`
+	IDX=$SPRITE4_HOME/genFastqIdx
+	MAP=$SPRITE4_HOME/sprite4-minimap2
+	SAMPA=$SPRITE4_HOME/sampa
+	PARSNIP=$SPRITE4_HOME/parsnip
+	STRELKA_HOME=$SPRITE4_HOME/sprite4_strelka2_install
+	BAMHDRFILE=$SPRITE4_HOME/bamHeaderFile
+	CHROMDEPTH=$STRELKA_HOME/libexec/GetChromDepth
+	VARCALL=$STRELKA_HOME/libexec/starling2
+	SAMTOOLS=$STRELKA_HOME/libexec/samtools
+#	echo "sprite_path $SPRITE4_HOME"
+#	echo "mpirun $MPIRUN"
+#	echo "samtools $SAMTOOLS"
+#	echo "idx $IDX"
+#	echo "map $MAP"
+#	echo "sampa $SAMPA"
+#	echo "varcall $VARCALL"
+}
+
+## global usage
+function usage() {
+#         parsnip     call SNPs in simple reference regions; extract complex alignment records
+#         mergevcf    combine vcf files created by parsnip and varcall steps; if parsnip is used
+	echo "
+Program: sprite4
+Version: 1.0
+Author: Vasudevan Rengasamy (vxr162@psu.edu)
+
+usage:   sprite4 <command> [options]
+
+command: idx         create index for FASTQ file
+         map         align FASTQ files with Minimap2
+         sampa       parallel in-memory sort
+         varcall     call SNPs, INDELs using sampa output
+
+options: -h       show this message
+"
+}
+
+function idx() {
+	echo "idx ${@:1}"
+	function idx_usage(){
+		echo "
+usage:   sprite4 idx [options] <in1.fq> [in2.fq]
+
+positional args:
+         in1.fq    single/paired-end fastq file; if single-end in2.fq is ignored if specified
+         in2.fq    paired-end fastq file
+
+options:
+         -c INT    number of logical partitions for the fastq file [1]
+"
+	}
+	if test -z "$1"
+	then
+		idx_usage
+		exit 1
+	fi
+	if ! test  -e $IDX
+	then
+		echo "$IDX not present!!!"
+		exit 1
+	fi
+	CMD=$IDX
+	while getopts "hc:" OPTION
+	do
+		case $OPTION in
+			h)
+			idx_usage
+			exit 1
+			;;
+			c)
+			CMD="$CMD  -c $OPTARG "
+			;;
+			*)
+        		echo -e "Error: command \"$1\" not recognized\n"
+			exit 1
+			;;
+		esac
+	done
+	FQ_STRING="${@:$((${OPTIND}))}"
+	CMD="$CMD $FQ_STRING"
+	$CMD
+}
+
+function map() {
+	echo "map ${@:1}"
+	function map_usage(){
+		echo "
+usage:   sprite4 map [options] <ref.fa> <in1.fq> [in2.fq]
+
+positional args:
+         ref.fa    reference genome in fasta format
+         in1.fq    single/paired-end fastq file; if single-end in2.fq is ignored if specified
+         in2.fq    paired-end fastq file
+
+options:
+         -p INT    Number of processes [1]
+         -t INT    Number of threads per process [1]
+         -s INT    Max. Number of reference regions [500]. Separate output files created for each region.
+         -o STR    Path for output files [./spriteout]
+         -h        Display this help message
+"
+	}
+	if test -z "$1"
+	then
+		map_usage
+		exit 1
+	fi
+	if ! test  -x $MAP
+	then
+		echo "$MAP not present!!!"
+		exit 1
+	fi
+
+	MAP_P=1
+	MAP_OPT=""
+	MAP_OUT_DIR="./sprite4out"
+	while getopts "hp:t:s:o:" OPTION
+	do
+		case $OPTION in
+			h)
+			map_usage
+			exit 1
+			;;
+			p)
+			MAP_P=$OPTARG
+			;;
+			t)
+			MAP_OPT="$MAP_OPT -t $OPTARG"
+			;;
+			s)
+			MAP_OPT="$MAP_OPT --segs=$OPTARG"
+			;;
+			o)
+			MAP_OUT_DIR="$OPTARG"
+			;;
+			*)
+        		echo -e "Error: command \"$1\" not recognized\n"
+			exit 1
+			;;
+		esac
+	done
+	FILE_STRING="${@:$((${OPTIND}))}"
+	FASTQ_STRING="${@:$((${OPTIND}+1))}"
+	FILE_LIST=($FILE_STRING)
+	NUM_FILES=${#FILE_LIST[@]}
+	if [ $NUM_FILES -lt 2 ]
+	then
+		map_usage
+		echo "Reference fasta file and atleast one FASTQ files required."
+		exit 1
+	fi
+	if ! test -e ${FILE_LIST[0]}
+	then
+		echo "File '${FILE_LIST[0]}' not found."
+		exit 1
+	fi
+	if ! test -e ${FILE_LIST[1]}
+	then
+		echo "File '${FILE_LIST[1]}' not found."
+		exit 1
+	fi
+	if [ $NUM_FILES -eq 3 ]
+	then
+		if ! test -e ${FILE_LIST[2]}
+		then
+			echo "File '${FILE_LIST[2]}' not found."
+			exit 1
+		fi
+	fi
+	IDXFILE="${FILE_LIST[0]}.mmi2"
+	echo "IDX: $IDXFILE"
+	if ! test -e $IDXFILE
+	then
+		echo "Creating fasta index $IDXFILE..."
+		$MAP -d $IDXFILE ${FILE_LIST[0]}
+	fi
+	for i in `seq 0 $(($MAP_P-1))`
+	do
+		CMD="mkdir -p $MAP_OUT_DIR/tmp${i}"
+		$CMD
+		for j in `ls $MAP_OUT_DIR/tmp${i}`
+		do
+			rm $MAP_OUT_DIR/tmp${i}/$j
+		done
+	done
+	echo "Aligning..."
+	CMD="mpirun -np $MAP_P $MAP -ax sr $MAP_OPT -o $MAP_OUT_DIR/tmp $IDXFILE $FASTQ_STRING"
+	$CMD
+	echo "Done."
+}
+
+function sampa() {
+	echo "sampa ${@:1}"
+	function sampa_usage(){
+		echo "
+usage:   sprite4 sampa [options] <ref.fa>
+
+positional args:
+         ref.fa    reference genome in fasta format
+
+options:
+         -p INT    Number of processes [1]
+         -t INT    Number of threads per process [1]
+         -s INT    Max. Number of reference regions used in MAP step [500]
+         -P INT    Number of processes used in MAP step [1]
+         -o STR    Path for output files used in MAP step [./spriteout]
+         -h        Display this help message
+"
+	}
+	if test -z "$1"
+	then
+		sampa_usage
+		exit 1
+	fi
+	if ! test  -e $SAMPA
+	then
+		echo "$SAMPA not present!!!"
+		exit 1
+	fi
+	MAP_P=1
+	SAMPA_P=1
+	SAMPA_T=1
+        MAP_OUT_SEGS=500
+	MAP_OUT_DIR="./sprite4out"
+	while getopts "hp:t:s:o:P:" OPTION
+	do
+		case $OPTION in
+			h)
+			sampa_usage
+			exit 1
+			;;
+			p)
+			SAMPA_P=$OPTARG
+			;;
+			t)
+			SAMPA_T=$OPTARG
+			;;
+			s)
+			MAP_OUT_SEGS=$OPTARG
+			;;
+			o)
+			MAP_OUT_DIR="$OPTARG"
+			;;
+			P)
+			MAP_P=$OPTARG
+			;;
+			*)
+        		echo -e "Error: command \"$1\" not recognized\n"
+			exit 1
+			;;
+		esac
+	done
+	FILE_STRING="${@:$((${OPTIND}))}"
+	FILE_LIST=($FILE_STRING)
+	NUM_FILES=${#FILE_LIST[@]}
+
+	if [ $NUM_FILES -eq 0 ]
+	then
+		sampa_usage
+		echo "Reference fasta file required."
+		exit 1
+	fi
+	FASTAFILE="${FILE_LIST[0]}"
+	if ! test -e $FASTAFILE
+	then
+		echo "Reference FASTA file $FASTAFILE not found"
+		exit 1
+	fi
+	IDXFILE="${FILE_LIST[0]}.fai"
+	if ! test -e $IDXFILE
+	then
+		echo "FASTA INDEX $IDXFILE not found. Creating with SAMTools."
+		$SAMTOOLS faidx $FASTAFILE
+	fi
+	for i in `seq 0 $(($MAP_P-1))`
+	do
+		SUBDIR="$MAP_OUT_DIR/tmp${i}"
+		if ! test -d $SUBDIR
+		then
+			echo "$SUBDIR not found"
+			exit 1
+		fi
+	done
+	echo "num files: $NUM_FILES"
+	echo "fasta file: $FILE_STRING"
+	echo "faidx file: $IDXFILE"
+	echo "Sorting..."
+	CMD="mpirun -np $SAMPA_P $SAMPA -t $SAMPA_T $MAP_OUT_SEGS $IDXFILE $MAP_OUT_DIR/tmp $MAP_P"
+#	echo $CMD
+	$CMD
+	echo "Done."
+}
+
+function parsnip() {
+	echo "parsnip ${@:1}"
+	function parsnip_usage(){
+		echo "
+usage:   sprite4 parsnip [options] <in1.fq> [in2.fq]
+
+positional args:
+
+options:
+         -h        Display this help message
+"
+	}
+	if test -z "$1"
+	then
+		parsnip_usage
+		exit 1
+	fi
+	if ! test  -e $PARSNIP
+	then
+		echo "$PARSNIP not present!!!"
+		exit 1
+	fi
+}
+
+function varcall() {
+	function varcall_usage(){
+		echo "
+usage:   sprite4 varcall [options] <ref.fa>
+
+positional args:
+         ref.fa    reference genome in fasta format
+
+options:
+         -p INT    Number of processes [1]
+         -s INT    Max. Number of reference regions used in MAP step [500]
+         -o STR    Path for output files used in MAP step [./spriteout]
+         -h        Display this help message
+"
+	}
+	if test -z "$1"
+	then
+		varcall_usage
+		exit 1
+	fi
+	if ! test  -e $VARCALL
+	then
+		echo "$VARCALL not present!!!"
+		exit 1
+	fi
+	if ! test  -e $CHROMDEPTH
+	then
+		echo "$CHROMDEPTH not present!!!"
+		exit 1
+	fi
+	if ! test  -e $BAMHDRFILE
+	then
+		echo "$BAMHDRFILE not present!!!"
+		exit 1
+	fi
+        MAP_OUT_SEGS=500
+	MAP_OUT_DIR="./sprite4out"
+	VARCALL_P=1
+	while getopts "hp:t:s:o:" OPTION
+	do
+		case $OPTION in
+			h)
+			varcall_usage
+			exit 1
+			;;
+			p)
+			VARCALL_P=$OPTARG
+			;;
+			s)
+			MAP_OUT_SEGS=$OPTARG
+			;;
+			o)
+			MAP_OUT_DIR="$OPTARG"
+			;;
+			*)
+        		echo -e "Error: command \"$1\" not recognized\n"
+			exit 1
+			;;
+		esac
+	done
+	FILE_STRING="${@:$((${OPTIND}))}"
+	FILE_LIST=($FILE_STRING)
+	NUM_FILES=${#FILE_LIST[@]}
+
+	if [ $NUM_FILES -eq 0 ]
+	then
+		varcall_usage
+		echo "Reference fasta file required."
+		exit 1
+	fi
+	FASTAFILE="${FILE_LIST[0]}"
+	if ! test -e $FASTAFILE
+	then
+		echo "Reference FASTA file $FASTAFILE not found"
+		exit 1
+	fi
+	IDXFILE="${FILE_LIST[0]}.fai"
+	if ! test -e $IDXFILE
+	then
+		echo "FASTA INDEX $IDXFILE not found. Creating with SAMTools."
+		$SAMTOOLS faidx $FASTAFILE
+	fi
+	$BAMHDRFILE $FASTAFILE ${MAP_OUT_DIR}/empty.bam
+	$SAMTOOLS index ${MAP_OUT_DIR}/empty.bam
+	if test -f ${MAP_OUT_DIR}/chromDepth.tsv
+	then
+		rm ${MAP_OUT_DIR}/chromDepth.tsv
+	fi
+	for i in `awk '{print $1}' $IDXFILE`
+	do
+		CMD="$CHROMDEPTH --align-file ${MAP_OUT_DIR}/empty.bam --ref $FASTAFILE --chrom $i  --aln-prefix ${MAP_OUT_DIR}/tmp0 --max-ref-segs $MAP_OUT_SEGS"
+		$CMD >> ${MAP_OUT_DIR}/chromDepth.tsv
+	done
+
+	GENOME_SIZE=`awk '{sum+=$2} END {print sum}' $IDXFILE`
+	STRELKA_CMD=$VARCALL
+	for i in `awk '{print $1":1-"$2}' $IDXFILE`
+	do
+		STRELKA_CMD="$STRELKA_CMD --region $i"
+	done
+	STRELKA_CMD="$STRELKA_CMD --ref $FASTAFILE -genome-size $GENOME_SIZE -max-indel-size 50 -min-mapping-quality 20 -max-window-mismatch 2 20 "
+	STRELKA_CMD="$STRELKA_CMD --gvcf-output-prefix ${MAP_OUT_DIR}/sprite4. --gvcf-min-gqx 15 --gvcf-min-homref-gqx 15 --gvcf-max-snv-strand-bias 10 -min-qscore 17 -bsnp-ssd-no-mismatch 0.35 -bsnp-ssd-one-mismatch 0.6 -min-vexp 0.25 --enable-read-backed-phasing --stats-file ${MAP_OUT_DIR} --snv-scoring-model-file ${STRELKA_HOME}/share/config/germlineSNVScoringModels.json --indel-scoring-model-file ${STRELKA_HOME}/share/config/germlineIndelScoringModels.json --align-file ${MAP_OUT_DIR}/empty.bam --indel-error-models-file ${STRELKA_HOME}/share/config/indelErrorModel.json --theta-file ${STRELKA_HOME}/share/config/theta.json --chrom-depth-file ${MAP_OUT_DIR}/chromDepth.tsv --aln-prefix ${MAP_OUT_DIR}/tmp0 --max-ref-segs $MAP_OUT_SEGS"
+	echo "Calling Variants using Starling2"
+	$STRELKA_CMD
+}
+
+function mergevcf() {
+	echo "mergevcf ${@:1}"
+	function mergevcf_usage(){
+		echo "
+usage:   sprite4 mergevcf [options] <in1.fq> [in2.fq]
+
+positional args:
+         in1.fq    single/paired-end fastq file; if single-end in2.fq is ignored if specified
+         in2.fq    paired-end fastq file
+
+options:
+         -c INT    number of logical partitions for the fastq file [1]
+"
+	}
+	if test -z "$1"
+	then
+		mergevcf_usage
+		exit 1
+	fi
+	if ! test  -e $MERGE
+	then
+		echo "$MERGE not present!!!"
+		exit 1
+	fi
+}
+
+# Show usage when there are no arguments.
+if test -z "$1"
+then
+	usage
+	exit 1
+fi
+
+while getopts "h" OPTION
+do
+	case $OPTION in
+		h)
+			usage
+			exit 1
+			;;
+		?)
+			usage
+			exit 1
+			;;
+	esac
+done
+
+source_binaries
+# call the function
+case "$1" in
+    'idx')
+	idx ${@:2}
+	;;
+    'map')
+	map ${@:2}
+	;;
+    'sampa')
+	sampa ${@:2}
+	;;
+#    'parsnip')
+#	parsnip ${@:2}
+#	;;
+    'varcall')
+	varcall ${@:2}
+	;;
+    'mergevcf')
+	mergevcf ${@:2}
+	;;
+    *)
+        usage
+        echo -e "Error: command \"$1\" not recognized\n"
+        exit 1
+esac
