@@ -13,11 +13,11 @@
 
 #define MM_VERSION "2.7-r655-dirty"
 
+int numTasks = 1, rank = 0;
+int numChunks = 500;
 #ifdef __linux__
 #include <sys/resource.h>
 #include <sys/time.h>
-int numTasks = 1, rank = 0;
-int numChunks = 500;
 void liftrlimit()
 {
 	struct rlimit r;
