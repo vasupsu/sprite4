@@ -753,7 +753,7 @@ size_t bam_streamer::getFirstRecordIndexForRange (FILE *fp, int isaibfile, size_
     }
     if (l != 0)
     {
-       std::cout << "l,m,h: " << l << "(" << prevpos << ")"  << "," << m << "(" << mpos << ")" << "," << h << "(" << nextpos << ")" << " lastElem " << lastrec << " key " << key << std::endl;//vasu
+//       std::cout << "l,m,h: " << l << "(" << prevpos << ")"  << "," << m << "(" << mpos << ")" << "," << h << "(" << nextpos << ")" << " lastElem " << lastrec << " key " << key << std::endl;
     }
     assert ((l==0) || (l==(lastrec+1)));
     return l;
@@ -773,7 +773,6 @@ resetRegion(const char* region)
         curTid = referenceContigId;
         curStart = beginPos;
         curEnd = endPos;
-        std::cout << "curTid " << curTid << " beginPos " << beginPos << " endPos " << endPos <<  std::endl;
 	
 	startFile = beginPos / maxChunkSize;
 	endFile = endPos / maxChunkSize;

@@ -367,6 +367,7 @@ readChromDepthFromAlignment(
     const int refSegs,
     const std::string& chromName)
 {
+//    std::cout << " readChromDepthFromAlignment " << chromName << std::endl;
     bam_streamer read_stream(alignmentFile.c_str(), referenceFile.c_str(), aebaibPrefix.c_str(), refSegs, 0, 1);
 
     const bam_hdr_t& header(read_stream.get_header());
@@ -441,6 +442,7 @@ readChromDepthFromAlignment(
 //            std::cout << "resetRegion " << chromIndex << ":" << startPos << "-" << endPos << std::endl;
             //read_stream.resetRegion(chromIndex, startPos, endPos);
             std::string regionStr (chromName + ":" + std::to_string(startPos+1) + "-" + std::to_string(endPos+1));
+//            std::cout << "readChromDepthFromAlignment " << regionStr << std::endl;
 //            regionStr << chromName << ":" << startPos << "-" << endPos;//vasu
 //            read_stream.resetRegion(chromIndex, startPos, endPos);
             read_stream.resetRegion(regionStr.c_str());
