@@ -30,7 +30,7 @@ extra:all $(PROG_EXTRA)
 
 genFastqIdx: genFastqIdx.c
 		$(CC) $(CFLAGS) -o genFastqIdx genFastqIdx.c
-minimap2:main.o getopt.o libminimap2.a
+sprite4-minimap2:main.o getopt.o libminimap2.a
 		$(CC) $(CFLAGS) main.o getopt.o -o $@ -L. -lminimap2 $(LIBS)
 
 minimap2-lite:example.o libminimap2.a
