@@ -143,7 +143,7 @@ int main(int argc, char **argv)
 		return 1;
 	}
 	char line[1000];
-	char fai_file[200], *bam_file, *fasta_file;
+	char fai_file[1000], *bam_file, *fasta_file;
 	fasta_file = argv[1];
 	sprintf (fai_file, "%s.fai", fasta_file);
 	bam_file = argv[2];
