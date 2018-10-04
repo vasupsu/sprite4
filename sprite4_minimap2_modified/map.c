@@ -632,7 +632,7 @@ int mm_map_file_frag(const mm_idx_t *idx, int n_segs, const char **fn, const mm_
 	pl.oPrefix = prefix;
 	pl.rank=rank;
 
-	char fq_idx_file[200];
+	char fq_idx_file[1000];
 	sprintf (fq_idx_file, "%s.idx", fn[0]);
 	struct stat buf;
 	int ret = stat (fq_idx_file, &buf);
