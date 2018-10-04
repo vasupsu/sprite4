@@ -21,7 +21,7 @@ int NUM_CONTIGS=93;
 int NUM_FILES=0;
 int max_out_files = 0;
 int numOutChunks, numMaxChunks, maxChunkSize;
-char fai_file[300];
+char fai_file[1000];
 int numtasks=1, rank=0, numThreads = 1, rSize=50000;
 typedef struct 
 {
