@@ -219,7 +219,7 @@ int main(int argc, char **argv) {
 	assert (fileSize != NULL);
 	for (i=0; i<argc; i++)
 	{
-		fileNames[i]=(char *)malloc(500);
+		fileNames[i]=(char *)malloc(50000);
 		assert (fileNames[i] != NULL);
         	sprintf (fileNames[i], "%s", argv[i]);
 	        int status = stat (fileNames[i], &buf);
@@ -237,7 +237,7 @@ int main(int argc, char **argv) {
 
 	long writeOfs = 0;
 	//FILE *fpOp = NULL;
-	char idxFile[200];
+	char idxFile[20000];
 	sprintf (idxFile, "%s.idx", fileNames[0]);
 	//long startOfs=0;
 	FILE *fpOut = fopen(idxFile, "w");
