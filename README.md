@@ -33,7 +33,7 @@ The folder sprite4\_strelka2\_modified contains the modified source code for [St
 Pre-built binaries are available for Linux x86\_64 architecture. This section is valid only for other architectures.
 ```
 conda install conda-build
-conda-build sprite4 --croot <SPRITE4\_build\_path>
+conda-build sprite4 --croot <SPRITE4_build_path>
 ```
 
 ## Installation
