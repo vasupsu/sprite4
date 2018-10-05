@@ -1,6 +1,6 @@
 #!/bin/bash
 
-sprite4 idx 
+sprite4 idx \
         sprite4_strelka2_install/share/demo/strelka/data/NA12891_demo20.fq
 
 sprite4 map -s 1 \
