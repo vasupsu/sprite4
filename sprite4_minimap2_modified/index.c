@@ -467,7 +467,7 @@ mm_idx_t *mm_idx_load(FILE *fp)
 		fseek (fp, sizeToRead*numTasks*i+sizeToRead*rank, SEEK_SET);
 		assert (fread (buf+sizeToRead*numTasks*i+sizeToRead*rank, 1, sizeToRead, fp) == sizeToRead);
 		printf ("[%d] Iter %d File read %lu bytes time %lf sec\n", rank, i, sizeToRead, realtime()-stime);
-#if USE_MPI
+#ifdef USE_MPI
 		if (numTasks > 1)
 		{
 			MPI_Allgather (MPI_IN_PLACE, sizeToRead, MPI_BYTE, buf+sizeToRead*numTasks*i, sizeToRead, MPI_BYTE, MPI_COMM_WORLD);
@@ -485,7 +485,7 @@ mm_idx_t *mm_idx_load(FILE *fp)
 		assert (fread (buf+ofs, 1, sizeToRead, fp) == sizeToRead);
 	}
 	printf ("[%d] File read %lu bytes time %lf sec\n", rank, sizeToRead, realtime()-stime);
-#if USE_MPI
+#ifdef USE_MPI
 	MPI_Barrier (MPI_COMM_WORLD);
 #endif
 /*	if (rank != 0)

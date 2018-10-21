@@ -259,6 +259,8 @@ typedef struct workerData
 }workerData;
 #define RANGE_MSG_OFS 3
 #define MIN_RANGES 3
+
+#ifdef COMM
 void *thread_worker (void *data)
 {
         workerData *wdata = (workerData *)data;
@@ -367,6 +369,7 @@ void *thread_worker (void *data)
         pthread_mutex_unlock(wdata->lock);
 	return NULL;
 }
+#endif
 
 void
 starling_run(
@@ -570,6 +573,8 @@ starling_run(
 
     pthread_mutex_destroy(&lock);
     posProcessor.reset();
+#ifdef USE_MPI
     MPI_Barrier(MPI_COMM_WORLD);
+#endif
     std::cout << "[" << rank << "] Elapsed time " << (double)elapsedtime/1000000 << " sec" << std::endl;
 }
