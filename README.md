@@ -56,4 +56,4 @@ conda install --use-local sprite4
 1. Li, H. (2018). [Minimap2: pairwise alignment for nucleotide sequences]{https://academic.oup.com/bioinformatics/advance-article/doi/10.1093/bioinformatics/bty191/4994778}. Bioinformatics. doi:10.1093/bioinformatics/bty191
 2. Kim, S., Scheffler, K. et al. (2017) [Strelka2: Fast and accurate variant calling for clinical sequencing applications](https://www.biorxiv.org/content/early/2017/09/23/192872). bioRxiv doi: 10.1101/192872
 
-For questions, please contact Vasudevan Rengasamy, vxr162@psu.edu
+For questions, please contact Vasudevan Rengasamy, vas.renga@gmail.com
