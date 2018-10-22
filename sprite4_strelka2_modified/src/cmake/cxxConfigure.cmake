@@ -382,8 +382,8 @@ append_args (CMAKE_CXX_FLAGS "${CXX_WARN_FLAGS}")
 #
 # other customizations
 #
-append_args (CMAKE_CXX_FLAGS "-DUSE_MPI")
-append_args (CMAKE_C_FLAGS "-DUSE_MPI")
+#append_args (CMAKE_CXX_FLAGS "-DUSE_MPI")
+#append_args (CMAKE_C_FLAGS "-DUSE_MPI")
 if (${GNU_COMPAT_COMPILER})
     if ((NOT ${CMAKE_CXX_COMPILER_ID} STREQUAL "Intel") OR (${COMPILER_VERSION} VERSION_LESS "15.0"))
         append_args (CMAKE_CXX_FLAGS "-std=c++0x")
