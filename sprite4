@@ -2,7 +2,7 @@
 set -e
 
 function source_binaries() {
-	SPRITE4_SCRIPT=`which $0`
+	SPRITE4_SCRIPT=`which $0 || true`
 	SPRITE4_HOME=`dirname $SPRITE4_SCRIPT`
 	MPIRUN=`which mpirun || true`
 	IDX=$SPRITE4_HOME/genFastqIdx
@@ -192,7 +192,13 @@ options:
 		done
 	done
 	echo "Aligning..."
-	CMD="mpirun -np $MAP_P $MAP -ax sr $MAP_OPT -o $MAP_OUT_DIR/tmp $IDXFILE $FASTQ_STRING"
+	if ! test -z $MPIRUN
+	then
+		CMD="$MPIRUN -np $MAP_P $MAP -ax sr $MAP_OPT -o $MAP_OUT_DIR/tmp $IDXFILE $FASTQ_STRING"
+	else
+		CMD="$MAP -ax sr $MAP_OPT -o $MAP_OUT_DIR/tmp $IDXFILE $FASTQ_STRING"
+	fi
+	echo $CMD
 	$CMD
 	echo "Done."
 }
@@ -293,7 +299,12 @@ options:
 	echo "fasta file: $FILE_STRING"
 	echo "faidx file: $IDXFILE"
 	echo "Sorting..."
-	CMD="mpirun -np $SAMPA_P $SAMPA -t $SAMPA_T $MAP_OUT_SEGS $IDXFILE $MAP_OUT_DIR/tmp $MAP_P"
+	if ! test -z $MPIRUN
+	then
+		CMD="$MPIRUN -np $SAMPA_P $SAMPA -t $SAMPA_T $MAP_OUT_SEGS $IDXFILE $MAP_OUT_DIR/tmp $MAP_P"
+	else
+		CMD="$SAMPA -t $SAMPA_T $MAP_OUT_SEGS $IDXFILE $MAP_OUT_DIR/tmp $MAP_P"
+	fi
 #	echo $CMD
 	$CMD
 	echo "Done."
