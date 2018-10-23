@@ -33,7 +33,7 @@ all:$(PROG)  genFastqIdx
 extra:all $(PROG_EXTRA)
 
 genFastqIdx: genFastqIdx.c
-		$(CC) $(CFLAGS) -o genFastqIdx genFastqIdx.c $(ELFLAG)
+		$(CC) -o genFastqIdx genFastqIdx.c
 sprite4-minimap2:main.o getopt.o libminimap2.a
 		$(CC) $(CFLAGS) main.o getopt.o -o $@ -L. -lminimap2 $(LIBS)
 
