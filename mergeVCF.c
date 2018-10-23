@@ -49,7 +49,7 @@ void combineStrelkaVcfs (char *prefix, int numFiles)
 	free (strelka_line);
 }
 
-void mergeParsnipStrelka (char *prefix)
+void mergeParsnipStrelka (char *parsnip_prefix, char *varcall_prefix, char *out_prefix)
 {
 	int contigNo=0, pos=0;
 
@@ -63,7 +63,7 @@ void mergeParsnipStrelka (char *prefix)
 	int parsnip_pos;
 	char fileName[300];
 
-	sprintf (fileName, "%s.vcf", prefix);
+	sprintf (fileName, "%s", parsnip_prefix);
 	FILE *fpParsnip = fopen (fileName, "r");
 	assert (fpParsnip != NULL);
 	fgets (parsnip_line, 2000, fpParsnip);
@@ -76,11 +76,11 @@ void mergeParsnipStrelka (char *prefix)
 		sscanf (parsnip_line, "%s\t%d", parsnip_contigstr, &parsnip_pos);
 	}
 
-	sprintf (fileName, "%s_combined.vcf", prefix);
+	sprintf (fileName, "%s", out_prefix);
 	FILE *fpOut = fopen (fileName, "w");
 	assert (fpOut != NULL);
 
-	sprintf (fileName, "%s_strelka2.vcf", prefix);
+	sprintf (fileName, "%s", varcall_prefix);
 	FILE *fpStrelka = fopen (fileName, "r");
 	assert (fpStrelka != NULL);
 	fgets (strelka_line, 200000000, fpStrelka);
@@ -147,12 +147,12 @@ void mergeParsnipStrelka (char *prefix)
 int main(int argc, char **argv)
 {
 	FILE *fpParsnip, *fpStrelka;
-	if (argc != 4)
+	if (argc != 5)
 	{
-		printf ("Usage: a.out <ref.fa.fai> <vcf prefix> <# strelka files>\n");
+		printf ("Usage: a.out <ref.fa.fai> <parsnip vcf> <varcall vcf> <out vcf>\n");
 		return 1;
 	}
-	int numFiles = atoi(argv[3]);
+//	int numFiles = atoi(argv[3]);
 //	combineStrelkaVcfs (argv[2], numFiles);
 	
 	char *fai_file = argv[1];
@@ -192,7 +192,7 @@ int main(int argc, char **argv)
 	}
 	fclose (fp_fai);
 
-	mergeParsnipStrelka(argv[2]);
+	mergeParsnipStrelka(argv[2], argv[3], argv[4]);
 	free (fileList);
 	return 0;
 }
