@@ -1,4 +1,4 @@
-CFLAGS=		-g -Wall -O2 -Wc++-compat  #-DUSE_MPI
+CFLAGS=		-g -Wall -O2 -Wc++-compat 
 CPPFLAGS=	-DHAVE_KALLOC
 INCLUDES=
 OBJS=		kthread.o kalloc.o misc.o bseq.o sketch.o sdust.o index.o chain.o align.o hit.o map.o format.o pe.o esterr.o ksw2_ll_sse.o
@@ -6,6 +6,7 @@ PROG=		sprite4-minimap2
 PROG_EXTRA=	sdust minimap2-lite
 LIBS=		-lm -lz -lpthread
 CFLAGS+=$(ECFLAG)
+CFLAGS+=$(MPIFLAG)
 CFLAGS+= -fopenmp
 LIBS+=$(ELFLAG)
 
