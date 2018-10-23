@@ -6,7 +6,7 @@ PROG=		sprite4-minimap2
 PROG_EXTRA=	sdust minimap2-lite
 LIBS=		-lm -lz -lpthread
 CFLAGS+=$(ECFLAG)
-CFLAGS+=' -fopenmp'
+CFLAGS+= -fopenmp
 LIBS+=$(ELFLAG)
 
 
