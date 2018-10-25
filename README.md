@@ -30,31 +30,35 @@ Apart from this, test scripts are also included. sprite4-\*test
 
 ## Requirement
 
-- Install [Miniconda][https://conda.io/miniconda.html]
-- Add <Miniconda\_path/bin> to PATH environment variable
-
-## Building SPRITE4 from source
-
-Pre-built binaries are available for Linux x86\_64 architecture. This section is valid only for other architectures.
-```
-conda install conda-build
-conda-build sprite4 --croot <SPRITE4_build_path>
-```
+- [Miniconda][https://conda.io/miniconda.html] or [Anaconda][https://www.anaconda.com/download/]
+- gcc >= 4.8
 
 ## Installation
 
-The package can be installed using [BIOCONDA](https://bioconda.github.io/) recipe. The installation command is:
-
-- To install pre-built binary
+Pre-built binaries are available for Linux x86\_64 and OSX x86\_64 architectures.  The installation command is:
 
 ```
-conda install -c vasupsu sprite4
+conda install -c vasupsu [-p install_path] sprite4
 ```
 
-- To install locally-built binary
+### Building SPRITE4 from source
 
+Alternatively, SPRITE4 can be built from source. SPRITE4 source code is available on [GitHub][https://github.com/vasupsu/sprite4]. SPRITE4 can be built using [BIOCONDA][https://bioconda.github.io] recipe located [here][https://github.com/vasupsu/bioconda-recipes/tree/master/recipes/sprite4] as below
+
+Clone SPRITE4 BIOCONDA recipe as
 ```
-conda install --use-local sprite4
+git clone https://github.com/vasupsu/bioconda-recipes
+cd bioconda-recipes/recipes
+```
+
+Build SPRITE4 as
+```
+conda-build sprite4 --croot <SPRITE4_build_path>
+```
+
+The built package sprite4-1.0-py27\_0.tar.bz2 an be found in the location  <SPRITE4\_build\_path/build\_platform>. Install SPRITE4 using local build as
+```
+conda install <SPRITE4_build_path/build_platform/sprite4-1.0-py27_0.tar.bz2>
 ```
 
 ## References
