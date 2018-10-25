@@ -41,6 +41,8 @@ Pre-built binaries are available for Linux x86\_64 and OSX x86\_64 architectures
 conda install -c vasupsu [-p install_path] sprite4
 ```
 
+After installation, executable binaries and scripts are copied to <install\_path/bin> folder.
+
 ### Building SPRITE4 from source
 
 Alternatively, SPRITE4 can be built from source. SPRITE4 source code is available on [GitHub](https://github.com/vasupsu/sprite4). SPRITE4 can be built using [BIOCONDA](https://bioconda.github.io) recipe located [here](https://github.com/vasupsu/bioconda-recipes/tree/master/recipes/sprite4) as below
@@ -60,6 +62,12 @@ The built package sprite4-1.0-py27\_0.tar.bz2 an be found in the location  <SPRI
 ```
 conda install <SPRITE4_build_path/build_platform/sprite4-1.0-py27_0.tar.bz2>
 ```
+
+## Testing using toy dataset
+
+The [SPRITE4](https://github.com/vasupsu/sprite4) repository includes a toy dataset NA12891. Sample test script sprite4\_test and sprite4\_parsnip\_test are simple test scripts for performing serial runs using this dataset. sprite4\_test executes MAP-SAMPA-VARCALL pipeline whereas sprite4\_parsnip\_test executes MAP-SAMPA-PARSNIP-VARCALL-MERGEVCF pipeline. Both these pipelines output the same set of variants for this dataset.These are BASH scripts and don't require any arguments.
+
+The test script sprite4\_generic\_test has configurable parameters such as number of nodes and threads used for experiments, etc. Using the user-provided values for these parameters, the script can either execute the SPRITE pipeline or generate the commands to execute each stage of the pipeline. The latter capability is provided for multi-node runs where batch scripts are required. In this case, a user can insert the generated commands into a batch script.
 
 ## References
 1. Li, H. (2018). [Minimap2: pairwise alignment for nucleotide sequences]{https://academic.oup.com/bioinformatics/advance-article/doi/10.1093/bioinformatics/bty191/4994778}. Bioinformatics. doi:10.1093/bioinformatics/bty191
