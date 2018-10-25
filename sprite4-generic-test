@@ -14,10 +14,10 @@ FQ_LPARTS=4
 REF_SEGS=4
 
 #Number of nodes/MPI tasks (Default: 1)
-NODES=1
+NODES=
 
 #Number of CPU cores/Node (Default: 1)
-CORES=2
+CORES=
 
 #Directory to contain output and intermediate files (Default: ./sprite4out)
 OUT_DIR=./sprite4out_parsnip_1P2T4S
