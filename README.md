@@ -30,7 +30,7 @@ Apart from this, test scripts are also included. sprite4-\*test
 
 ## Requirement
 
-- [Miniconda][https://conda.io/miniconda.html] or [Anaconda][https://www.anaconda.com/download/]
+- [Miniconda](https://conda.io/miniconda.html) or [Anaconda](https://www.anaconda.com/download/)
 - gcc >= 4.8
 
 ## Installation
@@ -43,7 +43,7 @@ conda install -c vasupsu [-p install_path] sprite4
 
 ### Building SPRITE4 from source
 
-Alternatively, SPRITE4 can be built from source. SPRITE4 source code is available on [GitHub][https://github.com/vasupsu/sprite4]. SPRITE4 can be built using [BIOCONDA][https://bioconda.github.io] recipe located [here][https://github.com/vasupsu/bioconda-recipes/tree/master/recipes/sprite4] as below
+Alternatively, SPRITE4 can be built from source. SPRITE4 source code is available on [GitHub](https://github.com/vasupsu/sprite4). SPRITE4 can be built using [BIOCONDA](https://bioconda.github.io) recipe located [here](https://github.com/vasupsu/bioconda-recipes/tree/master/recipes/sprite4) as below
 
 Clone SPRITE4 BIOCONDA recipe as
 ```
