@@ -20,11 +20,11 @@ NODES=
 CORES=
 
 #Directory to contain output and intermediate files (Default: ./sprite4out)
-OUT_DIR=./sprite4out_parsnip_1P2T4S
+OUT_DIR=
 
 #Use hybrid variant calling approach (PARSNIP+Strelka2) instead of only 
 #Strelka2 (Default: Strelkaonly due higher accuracy, any value = Hybrid)
-STRELKAONLY=no
+STRELKAONLY=
 
 #Only print commands or execute commands (Default: execute; any value = printonly)
 PRINTONLY=
