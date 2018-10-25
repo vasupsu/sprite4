@@ -63,7 +63,7 @@ The built package sprite4-1.0-py27\_0.tar.bz2 an be found in the location  <SPRI
 conda install <SPRITE4_build_path/build_platform/sprite4-1.0-py27_0.tar.bz2>
 ```
 
-## Testing using toy dataset
+## Running SPRITE4
 
 The [SPRITE4](https://github.com/vasupsu/sprite4) repository includes a toy dataset NA12891. Sample test script sprite4-test and sprite4-parsnip-test are simple test scripts for performing serial runs using this dataset. sprite4-test executes MAP-SAMPA-VARCALL pipeline whereas sprite4-parsnip-test executes MAP-SAMPA-PARSNIP-VARCALL pipeline shown in above Figure. Both these pipelines output the same set of variants for this dataset.These are BASH scripts and don't require any arguments.
 
