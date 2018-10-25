@@ -1,0 +1,113 @@
+#!/bin/bash
+REF_FA=sprite4_strelka2_install/share/demo/strelka/data/demo20.fa
+
+#FASTQ Files. FQ2 used for paired-end
+FQ1=sprite4_strelka2_install/share/demo/strelka/data/NA12891_demo20.fq
+FQ2=
+
+#Number of logical blocks to be created for the FASTQ files (Default: 1)
+FQ_LPARTS=4
+
+#Number of reference genome partitions. Separate alignment output created
+#for each reference partition (Default: 500. For Human Genome this is
+#reasonable.)
+REF_SEGS=4
+
+#Number of nodes/MPI tasks (Default: 1)
+NODES=1
+
+#Number of CPU cores/Node (Default: 1)
+CORES=2
+
+#Directory to contain output and intermediate files (Default: ./sprite4out)
+OUT_DIR=./sprite4out_parsnip_1P2T4S
+
+#Use hybrid variant calling approach (PARSNIP+Strelka2) instead of only 
+#Strelka2 (Default: Strelkaonly due higher accuracy, any value = Hybrid)
+STRELKAONLY=no
+
+#Only print commands or execute commands (Default: execute; any value = printonly)
+PRINTONLY=
+
+###############################################################################
+############################# Following script need not be edited #############
+###############################################################################
+
+FQFILES=$FQ1
+if ! test -z $FQ2; then
+	FQFILES+=" $FQ2"
+fi
+
+#Number of logical partitions
+IDX_OPT=
+if ! test -z $FQ_LPARTS; then
+	IDX_OPT="-c $FQ_LPARTS"
+fi
+
+#Print only option
+PRINT_OPT=
+if ! test -z $PRINTONLY; then
+	PRINT_OPT="-v"
+fi
+
+#options -s -o -v for map, sampa, parsnip, varcall
+COMMON_OPT=$PRINT_OPT
+if ! test -z $REF_SEGS; then
+	COMMON_OPT="$COMMON_OPT -s $REF_SEGS"
+fi
+
+if test -z $OUT_DIR; then
+	OUT_DIR="./sprite4out"
+fi
+COMMON_OPT="$COMMON_OPT -o $OUT_DIR"
+
+#options -p -t for map, sampa, parsnip and -p for varcall
+PT_OPT=
+if ! test -z $NODES; then
+	PT_OPT="-p $NODES"
+else
+	NODES=1
+fi
+
+if ! test -z $CORES; then
+	PT_OPT="$PT_OPT -t $CORES"
+else
+	CORES=1
+fi
+
+VARCALL_PT=$((NODES*CORES))
+VARCALL_PT_OPT="-p $VARCALL_PT"
+MAP_P_OPT="-P $NODES"
+
+#Index creation
+sprite4 idx \
+	$IDX_OPT $PRINT_OPT $FQFILES
+
+#Alignment
+sprite4 map \
+	$COMMON_OPT $PT_OPT $REF_FA $FQFILES
+
+#Sort
+sprite4 sampa \
+	$COMMON_OPT $PT_OPT $MAP_P_OPT $REF_FA
+
+#SNP calling
+if ! test -z $STRELKAONLY; then
+sprite4 parsnip \
+	${COMMON_OPT} $PT_OPT $REF_FA
+fi
+
+#variant calling
+if ! test -z $STRELKAONLY; then
+	sprite4 varcall  \
+		${COMMON_OPT}/parsnipout $VARCALL_PT_OPT $REF_FA
+else
+	sprite4 varcall  \
+		${COMMON_OPT} $VARCALL_PT_OPT $REF_FA
+fi
+
+#Merge Parsnip and Strelka2 VCF files
+if ! test -z $STRELKAONLY; then
+sprite4 mergevcf \
+	$PRINT_OPT -o $OUT_DIR $REF_FA
+fi

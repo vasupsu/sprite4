@@ -1,0 +1,25 @@
+#!/bin/bash
+
+sprite4 idx \
+        sprite4_strelka2_install/share/demo/strelka/data/NA12891_demo20.fq
+
+sprite4 map -s 1 \
+	-o ./sprite4out_parsnip \
+        sprite4_strelka2_install/share/demo/strelka/data/demo20.fa \
+        sprite4_strelka2_install/share/demo/strelka/data/NA12891_demo20.fq
+
+sprite4 sampa -s 1 \
+	-o ./sprite4out_parsnip \
+        sprite4_strelka2_install/share/demo/strelka/data/demo20.fa
+
+sprite4 parsnip -s 1 \
+	-o ./sprite4out_parsnip \
+        sprite4_strelka2_install/share/demo/strelka/data/demo20.fa
+
+sprite4 varcall -s 1 \
+        -o ./sprite4out_parsnip/parsnipout \
+        sprite4_strelka2_install/share/demo/strelka/data/demo20.fa
+
+sprite4 mergevcf \
+        -o ./sprite4out_parsnip \
+        sprite4_strelka2_install/share/demo/strelka/data/demo20.fa

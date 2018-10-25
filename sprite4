@@ -2,7 +2,7 @@
 set -e
 
 function source_binaries() {
-	SPRITE4_SCRIPT=`which $0 || true`
+	SPRITE4_SCRIPT=`which $0`
 	SPRITE4_HOME=`dirname $SPRITE4_SCRIPT`
 	MPIRUN=`which mpirun || true`
 	IDX=$SPRITE4_HOME/genFastqIdx
@@ -13,6 +13,7 @@ function source_binaries() {
 	BAMHDRFILE=$SPRITE4_HOME/bamHeaderFile
 	CHROMDEPTH=$STRELKA_HOME/libexec/GetChromDepth
 	VARCALL=$STRELKA_HOME/libexec/starling2
+	MERGEVCF=$SPRITE4_HOME/mergevcf
 	SAMTOOLS=$STRELKA_HOME/libexec/samtools
 #	echo "sprite_path $SPRITE4_HOME"
 #	echo "mpirun $MPIRUN"
@@ -25,8 +26,6 @@ function source_binaries() {
 
 ## global usage
 function usage() {
-#         parsnip     call SNPs in simple reference regions; extract complex alignment records
-#         mergevcf    combine vcf files created by parsnip and varcall steps; if parsnip is used
 	echo "
 Program: sprite4
 Version: 1.0
@@ -37,14 +36,15 @@ usage:   sprite4 <command> [options]
 command: idx         create index for FASTQ file
          map         align FASTQ files with Minimap2
          sampa       parallel in-memory sort
-         varcall     call SNPs, INDELs using sampa output
+         parsnip     call SNPs in simple reference regions; extract complex alignment records
+         varcall     call SNPs, INDELs using sampa/parsnip output
+         mergevcf    combine vcf files created by parsnip and varcall steps
 
 options: -h       show this message
 "
 }
 
 function idx() {
-	echo "idx ${@:1}"
 	function idx_usage(){
 		echo "
 usage:   sprite4 idx [options] <in1.fq> [in2.fq]
@@ -55,8 +55,10 @@ positional args:
 
 options:
          -c INT    number of logical partitions for the fastq file [1]
+         -v        only prints command without executing step
 "
 	}
+	PRINTONLY=
 	if test -z "$1"
 	then
 		idx_usage
@@ -68,29 +70,38 @@ options:
 		exit 1
 	fi
 	CMD=$IDX
-	while getopts "hc:" OPTION
+	while getopts "hvc:" OPTION
 	do
 		case $OPTION in
 			h)
 			idx_usage
 			exit 1
 			;;
+                        v)
+                        PRINTONLY=1
+                        ;;
 			c)
 			CMD="$CMD  -c $OPTARG "
 			;;
 			*)
-        		echo -e "Error: command \"$1\" not recognized\n"
+        		echo -e "Error: idx option not recognized\n"
 			exit 1
 			;;
 		esac
 	done
 	FQ_STRING="${@:$((${OPTIND}))}"
 	CMD="$CMD $FQ_STRING"
-	$CMD
+        if ! test -z $PRINTONLY
+        then
+		echo "#Create FASTQ index"
+                echo $CMD
+		echo 
+        else
+	        $CMD
+        fi
 }
 
 function map() {
-	echo "map ${@:1}"
 	function map_usage(){
 		echo "
 usage:   sprite4 map [options] <ref.fa> <in1.fq> [in2.fq]
@@ -104,10 +115,12 @@ options:
          -p INT    Number of processes [1]
          -t INT    Number of threads per process [1]
          -s INT    Max. Number of reference regions [500]. Separate output files created for each region.
-         -o STR    Path for output files [./spriteout]
+         -o STR    Path for output files [./sprite4out]
+         -v        only prints command without executing step
          -h        Display this help message
 "
 	}
+	PRINTONLY=
 	if test -z "$1"
 	then
 		map_usage
@@ -120,20 +133,25 @@ options:
 	fi
 
 	MAP_P=1
+	MAP_T=1
 	MAP_OPT=""
 	MAP_OUT_DIR="./sprite4out"
-	while getopts "hp:t:s:o:" OPTION
+	while getopts "hvp:t:s:o:" OPTION
 	do
 		case $OPTION in
 			h)
 			map_usage
 			exit 1
 			;;
+                        v)
+                        PRINTONLY=1
+                        ;;
 			p)
 			MAP_P=$OPTARG
 			;;
 			t)
 			MAP_OPT="$MAP_OPT -t $OPTARG"
+			MAP_T=$OPTARG
 			;;
 			s)
 			MAP_OPT="$MAP_OPT --segs=$OPTARG"
@@ -142,7 +160,7 @@ options:
 			MAP_OUT_DIR="$OPTARG"
 			;;
 			*)
-        		echo -e "Error: command \"$1\" not recognized\n"
+        		echo -e "Error: map option not recognized\n"
 			exit 1
 			;;
 		esac
@@ -176,7 +194,6 @@ options:
 		fi
 	fi
 	IDXFILE="${FILE_LIST[0]}.mmi2"
-	echo "IDX: $IDXFILE"
 	if ! test -e $IDXFILE
 	then
 		echo "Creating fasta index $IDXFILE..."
@@ -191,20 +208,25 @@ options:
 			rm $MAP_OUT_DIR/tmp${i}/$j
 		done
 	done
-	echo "Aligning..."
 	if ! test -z $MPIRUN
 	then
 		CMD="$MPIRUN -np $MAP_P $MAP -ax sr $MAP_OPT -o $MAP_OUT_DIR/tmp $IDXFILE $FASTQ_STRING"
 	else
 		CMD="$MAP -ax sr $MAP_OPT -o $MAP_OUT_DIR/tmp $IDXFILE $FASTQ_STRING"
 	fi
-	echo $CMD
-	$CMD
-	echo "Done."
+        if ! test -z $PRINTONLY
+        then
+		echo "#Alignment using MAP step - $MAP_P mpi tasks, $MAP_T threads/task" 
+                echo $CMD
+		echo 
+        else
+		echo "Aligning..."
+	        $CMD
+		echo "Done"
+        fi
 }
 
 function sampa() {
-	echo "sampa ${@:1}"
 	function sampa_usage(){
 		echo "
 usage:   sprite4 sampa [options] <ref.fa>
@@ -217,10 +239,12 @@ options:
          -t INT    Number of threads per process [1]
          -s INT    Max. Number of reference regions used in MAP step [500]
          -P INT    Number of processes used in MAP step [1]
-         -o STR    Path for output files used in MAP step [./spriteout]
+         -o STR    Path for output files used in MAP step [./sprite4out]
+         -v        only prints command without executing step
          -h        Display this help message
 "
 	}
+	PRINTONLY=
 	if test -z "$1"
 	then
 		sampa_usage
@@ -236,13 +260,16 @@ options:
 	SAMPA_T=1
         MAP_OUT_SEGS=500
 	MAP_OUT_DIR="./sprite4out"
-	while getopts "hp:t:s:o:P:" OPTION
+	while getopts "hvp:t:s:o:P:" OPTION
 	do
 		case $OPTION in
 			h)
 			sampa_usage
 			exit 1
 			;;
+                        v)
+                        PRINTONLY=1
+                        ;;
 			p)
 			SAMPA_P=$OPTARG
 			;;
@@ -259,7 +286,7 @@ options:
 			MAP_P=$OPTARG
 			;;
 			*)
-        		echo -e "Error: command \"$1\" not recognized\n"
+        		echo -e "Error: sampa option not recognized\n"
 			exit 1
 			;;
 		esac
@@ -295,33 +322,45 @@ options:
 			exit 1
 		fi
 	done
-	echo "num files: $NUM_FILES"
-	echo "fasta file: $FILE_STRING"
-	echo "faidx file: $IDXFILE"
-	echo "Sorting..."
+#	echo "num files: $NUM_FILES"
+#	echo "fasta file: $FILE_STRING"
+#	echo "faidx file: $IDXFILE"
 	if ! test -z $MPIRUN
 	then
 		CMD="$MPIRUN -np $SAMPA_P $SAMPA -t $SAMPA_T $MAP_OUT_SEGS $IDXFILE $MAP_OUT_DIR/tmp $MAP_P"
 	else
 		CMD="$SAMPA -t $SAMPA_T $MAP_OUT_SEGS $IDXFILE $MAP_OUT_DIR/tmp $MAP_P"
 	fi
-#	echo $CMD
-	$CMD
-	echo "Done."
+        if ! test -z $PRINTONLY
+        then
+		echo "#Sorting using SAMPA - $SAMPA_P MPI tasks, $SAMPA_T threads/task"
+                echo $CMD
+		echo 
+        else
+		echo "Sorting..."
+	        $CMD
+		echo "Done"
+        fi
 }
 
 function parsnip() {
-	echo "parsnip ${@:1}"
 	function parsnip_usage(){
 		echo "
-usage:   sprite4 parsnip [options] <in1.fq> [in2.fq]
+usage:   sprite4 parsnip [options] <ref.fa>
 
 positional args:
+         ref.fa    reference genome in fasta format
 
 options:
+         -p INT    Number of processes [1]
+         -t INT    Number of threads per process [1]
+         -s INT    Max. Number of reference regions used in MAP step [500]
+         -o STR    Path for output files used in MAP step [./sprite4out]
+         -v        only prints command without executing step
          -h        Display this help message
 "
 	}
+	PRINTONLY=
 	if test -z "$1"
 	then
 		parsnip_usage
@@ -332,6 +371,88 @@ options:
 		echo "$PARSNIP not present!!!"
 		exit 1
 	fi
+
+	PARSNIP_P=1
+	PARSNIP_T=1
+        MAP_OUT_SEGS=500
+	MAP_OUT_DIR="./sprite4out"
+	while getopts "hvp:t:s:o:" OPTION
+	do
+		case $OPTION in
+			h)
+			parsnip_usage
+			exit 1
+			;;
+                        v)
+                        PRINTONLY=1
+                        ;;
+			p)
+			PARSNIP_P=$OPTARG
+			;;
+			t)
+			PARSNIP_T=$OPTARG
+			;;
+			s)
+			MAP_OUT_SEGS=$OPTARG
+			;;
+			o)
+			MAP_OUT_DIR="$OPTARG"
+			;;
+			*)
+        		echo -e "Error: parsnip option not recognized\n"
+			exit 1
+			;;
+		esac
+	done
+
+	FILE_STRING="${@:$((${OPTIND}))}"
+	FILE_LIST=($FILE_STRING)
+	NUM_FILES=${#FILE_LIST[@]}
+
+	if [ $NUM_FILES -eq 0 ]
+	then
+		parsnip_usage
+		echo "Reference fasta file required."
+		exit 1
+	fi
+	FASTAFILE="${FILE_LIST[0]}"
+	if ! test -e $FASTAFILE
+	then
+		echo "Reference FASTA file $FASTAFILE not found"
+		exit 1
+	fi
+	IDXFILE="${FILE_LIST[0]}.fai"
+	if ! test -e $IDXFILE
+	then
+		echo "FASTA INDEX $IDXFILE not found. Creating with SAMTools."
+		$SAMTOOLS faidx $FASTAFILE
+	fi
+#	echo "num files: $NUM_FILES"
+#	echo "fasta file: $FILE_STRING"
+#	echo "faidx file: $IDXFILE"
+	CMD="mkdir -p $MAP_OUT_DIR/parsnipout/tmp0"
+	$CMD
+	for j in `ls $MAP_OUT_DIR/parsnipout/tmp0`
+	do
+		CMD="rm $MAP_OUT_DIR/parsnipout/tmp0/$j"
+		$CMD
+	done
+	if ! test -z $MPIRUN
+	then
+		CMD="$MPIRUN -np $PARSNIP_P $PARSNIP -t $PARSNIP_T --OUT=$MAP_OUT_SEGS $FILE_STRING $MAP_OUT_DIR/tmp0 $MAP_OUT_DIR/parsnipout/tmp0"
+	else
+		CMD="$PARSNIP -t $PARSNIP_T --OUT=$MAP_OUT_SEGS $FILE_STRING $MAP_OUT_DIR/tmp0 $MAP_OUT_DIR/parsnipout/tmp0"
+	fi
+        if ! test -z $PRINTONLY
+        then
+		echo "#SNP calling using PARSNIP - $PARSNIP_P MPI tasks, $PARSNIP_T threads/task"
+                echo $CMD
+		echo
+        else
+	        echo "Calling SNPs using PARSNIP..."
+	        $CMD
+		echo "Done"
+        fi
 }
 
 function varcall() {
@@ -345,10 +466,12 @@ positional args:
 options:
          -p INT    Number of processes [1]
          -s INT    Max. Number of reference regions used in MAP step [500]
-         -o STR    Path for output files used in MAP step [./spriteout]
+         -o STR    Path for output files used in MAP step [./sprite4out]
+         -v        only prints command without executing step
          -h        Display this help message
 "
 	}
+	PRINTONLY=
 	if test -z "$1"
 	then
 		varcall_usage
@@ -372,13 +495,16 @@ options:
         MAP_OUT_SEGS=500
 	MAP_OUT_DIR="./sprite4out"
 	VARCALL_P=1
-	while getopts "hp:t:s:o:" OPTION
+	while getopts "hvp:t:s:o:" OPTION
 	do
 		case $OPTION in
 			h)
 			varcall_usage
 			exit 1
 			;;
+                        v)
+                        PRINTONLY=1
+                        ;;
 			p)
 			VARCALL_P=$OPTARG
 			;;
@@ -389,7 +515,7 @@ options:
 			MAP_OUT_DIR="$OPTARG"
 			;;
 			*)
-        		echo -e "Error: command \"$1\" not recognized\n"
+        		echo -e "Error: varcall option not recognized\n"
 			exit 1
 			;;
 		esac
@@ -398,6 +524,7 @@ options:
 	FILE_LIST=($FILE_STRING)
 	NUM_FILES=${#FILE_LIST[@]}
 
+	echo "#Variant calling using VARCALL step - $VARCALL_P MPI tasks"
 	if [ $NUM_FILES -eq 0 ]
 	then
 		varcall_usage
@@ -416,54 +543,144 @@ options:
 		echo "FASTA INDEX $IDXFILE not found. Creating with SAMTools."
 		$SAMTOOLS faidx $FASTAFILE
 	fi
-	$BAMHDRFILE $FASTAFILE ${MAP_OUT_DIR}/empty.bam
-	$SAMTOOLS index ${MAP_OUT_DIR}/empty.bam
-	if test -f ${MAP_OUT_DIR}/chromDepth.tsv
-	then
-		rm ${MAP_OUT_DIR}/chromDepth.tsv
+	CMD1="$BAMHDRFILE $FASTAFILE ${MAP_OUT_DIR}/empty.bam"
+	CMD2="$SAMTOOLS index ${MAP_OUT_DIR}/empty.bam"
+	if ! test -z $PRINTONLY
+	then 
+		echo $CMD1
+		echo $CMD2
+		echo "if test -f ${MAP_OUT_DIR}/chromDepth.tsv; then rm ${MAP_OUT_DIR}/chromDepth.tsv; fi"
+		echo "for i in `awk 'BEGIN { ORS=" " }; {print $1}' $IDXFILE`"
+		echo "do"
+		echo "CMD=\"$CHROMDEPTH --align-file ${MAP_OUT_DIR}/empty.bam --ref $FASTAFILE --chrom \$i  --aln-prefix ${MAP_OUT_DIR}/tmp0 --max-ref-segs $MAP_OUT_SEGS\""
+		echo "\$CMD >> ${MAP_OUT_DIR}/chromDepth.tsv"
+		echo "done"
+		echo "GENOME_SIZE=`awk '{sum+=\$2} END {print sum}' $IDXFILE`"
+		GENOME_SIZE=`awk '{sum+=$2} END {print sum}' $IDXFILE`
+	else
+		$CMD1
+		$CMD2
+		if test -f ${MAP_OUT_DIR}/chromDepth.tsv
+		then
+			rm ${MAP_OUT_DIR}/chromDepth.tsv
+		fi
+		for i in `awk '{print $1}' $IDXFILE`
+		do
+			CMD="$CHROMDEPTH --align-file ${MAP_OUT_DIR}/empty.bam --ref $FASTAFILE --chrom $i  --aln-prefix ${MAP_OUT_DIR}/tmp0 --max-ref-segs $MAP_OUT_SEGS"
+			$CMD >> ${MAP_OUT_DIR}/chromDepth.tsv
+		done
+		GENOME_SIZE=`awk '{sum+=$2} END {print sum}' $IDXFILE`
 	fi
-	for i in `awk '{print $1}' $IDXFILE`
-	do
-		CMD="$CHROMDEPTH --align-file ${MAP_OUT_DIR}/empty.bam --ref $FASTAFILE --chrom $i  --aln-prefix ${MAP_OUT_DIR}/tmp0 --max-ref-segs $MAP_OUT_SEGS"
-		$CMD >> ${MAP_OUT_DIR}/chromDepth.tsv
-	done
 
-	GENOME_SIZE=`awk '{sum+=$2} END {print sum}' $IDXFILE`
-	STRELKA_CMD=$VARCALL
+	if ! test -z $MPIRUN
+	then
+		STRELKA_CMD="$MPIRUN -np $VARCALL_P $VARCALL"
+	else
+		STRELKA_CMD=$VARCALL
+	fi
+
 	for i in `awk '{print $1":1-"$2}' $IDXFILE`
 	do
 		STRELKA_CMD="$STRELKA_CMD --region $i"
 	done
 	STRELKA_CMD="$STRELKA_CMD --ref $FASTAFILE -genome-size $GENOME_SIZE -max-indel-size 50 -min-mapping-quality 20 -max-window-mismatch 2 20 "
 	STRELKA_CMD="$STRELKA_CMD --gvcf-output-prefix ${MAP_OUT_DIR}/sprite4. --gvcf-min-gqx 15 --gvcf-min-homref-gqx 15 --gvcf-max-snv-strand-bias 10 -min-qscore 17 -bsnp-ssd-no-mismatch 0.35 -bsnp-ssd-one-mismatch 0.6 -min-vexp 0.25 --enable-read-backed-phasing --stats-file ${MAP_OUT_DIR} --snv-scoring-model-file ${STRELKA_HOME}/share/config/germlineSNVScoringModels.json --indel-scoring-model-file ${STRELKA_HOME}/share/config/germlineIndelScoringModels.json --align-file ${MAP_OUT_DIR}/empty.bam --indel-error-models-file ${STRELKA_HOME}/share/config/indelErrorModel.json --theta-file ${STRELKA_HOME}/share/config/theta.json --chrom-depth-file ${MAP_OUT_DIR}/chromDepth.tsv --aln-prefix ${MAP_OUT_DIR}/tmp0 --max-ref-segs $MAP_OUT_SEGS"
-	echo "Calling Variants using Starling2"
-	$STRELKA_CMD
+        if ! test -z $PRINTONLY
+        then
+                echo $STRELKA_CMD
+		echo
+        else
+#                echo $STRELKA_CMD
+		$STRELKA_CMD
+		echo "Done"
+        fi
 }
 
 function mergevcf() {
-	echo "mergevcf ${@:1}"
 	function mergevcf_usage(){
 		echo "
-usage:   sprite4 mergevcf [options] <in1.fq> [in2.fq]
+usage:   sprite4 mergevcf [options] <ref.fa>
 
 positional args:
-         in1.fq    single/paired-end fastq file; if single-end in2.fq is ignored if specified
-         in2.fq    paired-end fastq file
+         ref.fa    reference genome in fasta format
 
 options:
-         -c INT    number of logical partitions for the fastq file [1]
+         -o STR    Path for output files used in MAP step [./sprite4out]
+         -v        only prints command without executing step
+         -h        Display this help message
 "
 	}
+	PRINTONLY=
 	if test -z "$1"
 	then
 		mergevcf_usage
 		exit 1
 	fi
-	if ! test  -e $MERGE
+	if ! test  -e $MERGEVCF
 	then
-		echo "$MERGE not present!!!"
+		echo "$MERGEVCF not present!!!"
 		exit 1
 	fi
+	MAP_OUT_DIR="./sprite4out"
+	while getopts "hvo:" OPTION
+	do
+		case $OPTION in
+			h)
+			mergevcf_usage
+			exit 1
+			;;
+                        v)
+                        PRINTONLY=1
+                        ;;
+			o)
+			MAP_OUT_DIR="$OPTARG"
+			;;
+			*)
+        		echo -e "Error: mergevcf option not recognized\n"
+			exit 1
+			;;
+		esac
+	done
+	FILE_STRING="${@:$((${OPTIND}))}"
+	FILE_LIST=($FILE_STRING)
+	NUM_FILES=${#FILE_LIST[@]}
+
+	if [ $NUM_FILES -eq 0 ]
+	then
+		mergevcf_usage
+		echo "Reference fasta file required."
+		exit 1
+	fi
+	FASTAFILE="${FILE_LIST[0]}"
+	if ! test -e $FASTAFILE
+	then
+		echo "Reference FASTA file $FASTAFILE not found"
+		exit 1
+	fi
+	IDXFILE="${FILE_LIST[0]}.fai"
+	if ! test -e $IDXFILE
+	then
+		echo "FASTA INDEX $IDXFILE not found. Creating with SAMTools."
+		$SAMTOOLS faidx $FASTAFILE
+	fi
+#	echo "num files: $NUM_FILES"
+#	echo "fasta file: $FILE_STRING"
+#	echo "faidx file: $IDXFILE"
+	VARCALL_VCF="${MAP_OUT_DIR}/parsnipout/sprite4.variants.vcf"
+	PARSNIP_VCF="${MAP_OUT_DIR}/parsnipout/tmp0/parsnip.vcf"
+	CMD="$MERGEVCF $IDXFILE $PARSNIP_VCF $VARCALL_VCF ${MAP_OUT_DIR}/sprite4.combined.vcf"
+#	echo $CMD
+        if ! test -z $PRINTONLY
+        then
+		echo "#Merge PARSNIP and VARCALL VCF files"
+                echo $CMD
+		echo "echo \"Combined VCF file ${MAP_OUT_DIR}/sprite4.combined.vcf created\""
+		echo 
+        else
+		echo "#Merge PARSNIP and VARCALL VCF files"
+		$CMD
+		echo "Combined VCF file ${MAP_OUT_DIR}/sprite4.combined.vcf created"
+        fi
 }
 
 # Show usage when there are no arguments.
@@ -499,9 +716,9 @@ case "$1" in
     'sampa')
 	sampa ${@:2}
 	;;
-#    'parsnip')
-#	parsnip ${@:2}
-#	;;
+    'parsnip')
+	parsnip ${@:2}
+	;;
     'varcall')
 	varcall ${@:2}
 	;;
