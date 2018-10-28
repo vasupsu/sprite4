@@ -58,7 +58,7 @@ Build SPRITE4 as
 conda-build sprite4 --croot <SPRITE4_build_path>
 ```
 
-The built package sprite4-1.0-py27\_0.tar.bz2 an be found in the location  <SPRITE4\_build\_path/build\_platform>. Install SPRITE4 using local build as
+The built package sprite4-1.0-py27\_0.tar.bz2 can be found in the location  <SPRITE4\_build\_path/build\_platform>. Install SPRITE4 using local build as
 ```
 conda install <SPRITE4_build_path/build_platform/sprite4-1.0-py27_0.tar.bz2>
 ```
