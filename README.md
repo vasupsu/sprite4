@@ -43,9 +43,12 @@ conda install -c vasupsu [-p install_path] sprite4
 
 After installation, executable binaries and scripts are copied to <install\_path/bin> folder.
 
-### Building SPRITE4 from source
+## Building SPRITE4 from source
 
-Alternatively, SPRITE4 can be built from source. SPRITE4 source code is available on [GitHub](https://github.com/vasupsu/sprite4). SPRITE4 can be built using [BIOCONDA](https://bioconda.github.io) recipe located [here](https://github.com/vasupsu/bioconda-recipes/tree/master/recipes/sprite4) as below
+Alternatively, SPRITE4 can be built from source. SPRITE4 source code is available on [GitHub](https://github.com/vasupsu/sprite4). 
+### Using BIOCONDA
+
+SPRITE4 can be built using [BIOCONDA](https://bioconda.github.io) recipe located [here](https://github.com/vasupsu/bioconda-recipes/tree/master/recipes/sprite4) as below.
 
 Clone SPRITE4 BIOCONDA recipe as
 ```
@@ -62,6 +65,10 @@ The built package sprite4-1.0-py27\_0.tar.bz2 can be found in the location  <SPR
 ```
 conda install <SPRITE4_build_path/build_platform/sprite4-1.0-py27_0.tar.bz2>
 ```
+
+### Manual compilation
+
+SPRITE4's BIOCONDA recipe uses [OpenMPI](https://www.open-mpi.org) for compiling SPRITE4. On systems that have other MPI libraries such as MPICH or IntelMPI, SPRITE can be compiled using the compilation script *compile.h* included in this repository. This script creates a folder *<sprite4 download path>/sprite4/bin* and copies all executable files to this folder.
 
 ## Running SPRITE4
 
