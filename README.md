@@ -68,7 +68,7 @@ conda install <SPRITE4_build_path/build_platform/sprite4-1.0-py27_0.tar.bz2>
 
 ### Manual compilation
 
-SPRITE4's BIOCONDA recipe uses [OpenMPI](https://www.open-mpi.org) for compiling SPRITE4. On systems that have other MPI libraries such as MPICH or IntelMPI, SPRITE can be compiled using the compilation script *compile.h* included in this repository. This script creates a folder *<sprite4 download path>/sprite4/bin* and copies all executable files to this folder.
+SPRITE4's BIOCONDA recipe uses [OpenMPI](https://www.open-mpi.org) for compiling SPRITE4. On systems that have other MPI libraries such as MPICH or IntelMPI, SPRITE can be compiled using the compilation script *compile.h* included in this repository. This script creates a folder *\<sprite4 download path\>/sprite4/bin* and copies all executable files to this folder.
 
 ## Running SPRITE4
 
