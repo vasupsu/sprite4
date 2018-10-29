@@ -5,8 +5,8 @@ OBJS=		kthread.o kalloc.o misc.o bseq.o sketch.o sdust.o index.o chain.o align.o
 PROG=		sprite4-minimap2
 PROG_EXTRA=	sdust minimap2-lite
 LIBS=		-lm -lz -lpthread
-CFLAGS+=$(ECFLAG)
 CFLAGS+=$(MPIFLAG)
+CFLAGS+=$(ECFLAG)
 CFLAGS+= -fopenmp
 LIBS+=$(ELFLAG)
 
