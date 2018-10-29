@@ -72,7 +72,7 @@ SPRITE4's BIOCONDA recipe uses [OpenMPI](https://www.open-mpi.org) for compiling
 
 ## Running SPRITE4
 
-The [SPRITE4](https://github.com/vasupsu/sprite4) repository includes a toy dataset NA12891. Sample test script sprite4-test and sprite4-parsnip-test are simple test scripts for performing serial runs using this dataset. sprite4-test executes MAP-SAMPA-VARCALL pipeline whereas sprite4-parsnip-test executes MAP-SAMPA-PARSNIP-VARCALL pipeline shown in above Figure. Both these pipelines output the same set of variants for this dataset.These are BASH scripts and don't require any arguments.
+The [SPRITE4](https://github.com/vasupsu/sprite4) repository includes a toy dataset NA12891. Sample test script *sprite4-test* and *sprite4-parsnip-test* are simple test scripts for performing serial runs using this dataset. sprite4-test executes MAP-SAMPA-VARCALL pipeline whereas sprite4-parsnip-test executes MAP-SAMPA-PARSNIP-VARCALL pipeline shown in above Figure. Both these pipelines output the same set of variants for this dataset.These are BASH scripts and don't require any arguments.
 
 The test script *sprite4-generic-test* has configurable parameters such as number of nodes and threads used for experiments, etc. Using the user-provided values for these parameters, the script can either execute the SPRITE pipeline or generate the commands to execute each stage of the pipeline. The latter capability is provided for multi-node runs where batch scripts are required. In this case, a user can insert the generated commands into a batch script.
 
