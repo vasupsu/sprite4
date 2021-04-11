@@ -48,8 +48,8 @@ typedef struct {
 typedef struct fullRec
 {
 	int32_t pos;
-	uint8_t seq[60];
-	uint8_t quals[120];
+	uint8_t seq[150];
+	uint8_t quals[300];
 	uint16_t flag;
 	uint8_t qual;
 	uint8_t  matchLen;
@@ -59,8 +59,8 @@ typedef struct
 {
 	uint32_t pos;
 	uint16_t flag;
-	uint8_t seq[60];
-	uint8_t quals[120];
+	uint8_t seq[150];
+	uint8_t quals[300];
 	uint8_t qual;
 	uint8_t n_cigar;
 	uint16_t cigar[10];
@@ -90,7 +90,7 @@ void mm_sketch(void *km, const char *str, int len, int w, int k, uint32_t rid, i
 void mm_write_sam_hdr(const mm_idx_t *mi, const char *rg, const char *ver, int argc, char *argv[]);
 void mm_write_paf(kstring_t *s, const mm_idx_t *mi, const mm_bseq1_t *t, const mm_reg1_t *r, void *km, int opt_flag);
 void mm_write_sam(kstring_t *s, const mm_idx_t *mi, const mm_bseq1_t *t, const mm_reg1_t *r, int n_regs, const mm_reg1_t *regs);
-void mm_write_sam2(kstring_t *s, const mm_idx_t *mi, mm_bseq1_t *t, int seg_idx, int reg_idx, int n_seg, const int *n_regs, const mm_reg1_t *const* regs, void *km, int opt_flag, FILE **aebFp, FILE **aibFp, int numOutChunks, int numMaxChunks, int maxChunkSize, char *prefix, vec_fullRec *vfr, vec_otherRec *vor);
+void mm_write_sam2(kstring_t *s, const mm_idx_t *mi, mm_bseq1_t *t, int seg_idx, int reg_idx, int n_seg, const int *n_regs, const mm_reg1_t *const* regs, void *km, int opt_flag, FILE **aebFp, FILE **aibFp, char **aebFIleName, char **aibFIleName, int numOutChunks, int numMaxChunks, int maxChunkSize, char *prefix, vec_fullRec *vfr, vec_otherRec *vor);
 
 void mm_idxopt_init(mm_idxopt_t *opt);
 const uint64_t *mm_idx_get(const mm_idx_t *mi, uint64_t minier, int *n);

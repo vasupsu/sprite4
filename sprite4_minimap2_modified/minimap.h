@@ -293,9 +293,9 @@ mm_reg1_t *mm_map(const mm_idx_t *mi, int l_seq, const char *seq, int *n_regs, m
  *
  * @return 0 on success; -1 if _fn_ can't be read
  */
-int mm_map_file(const mm_idx_t *idx, const char *fn, const mm_mapopt_t *opt, int n_threads, int numTasks, int rank, char *prefix, int maxChunkSize, int numOutChunks, int numMaxChunks, FILE **aebFp, FILE **aibFp);
+int mm_map_file(const mm_idx_t *idx, const char *fn, const mm_mapopt_t *opt, int n_threads, int numTasks, int rank, char *prefix, int maxChunkSize, int numOutChunks, int numMaxChunks, FILE **aebFp, FILE **aibFp, char **aebFileName, char **aibFileName);
 
-int mm_map_file_frag(const mm_idx_t *idx, int n_segs, const char **fn, const mm_mapopt_t *opt, int n_threads, int numTasks, int rank, char *prefix, int maxChunkSize, int numOutChunks, int numMaxChunks, FILE **aebFp, FILE **aibFp);
+int mm_map_file_frag(const mm_idx_t *idx, int n_segs, const char **fn, const mm_mapopt_t *opt, int n_threads, int numTasks, int rank, char *prefix, int maxChunkSize, int numOutChunks, int numMaxChunks, FILE **aebFp, FILE **aibFp, char **aebFileName, char **aibFileName);
 
 // deprecated APIs for backward compatibility
 void mm_mapopt_init(mm_mapopt_t *opt);

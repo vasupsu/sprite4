@@ -316,7 +316,7 @@ static void write_sam_cigar(kstring_t *s, int sam_flag, int in_tag, int qlen, co
 	}
 }
 
-void mm_write_sam2(kstring_t *s, const mm_idx_t *mi, mm_bseq1_t *t, int seg_idx, int reg_idx, int n_seg, const int *n_regss, const mm_reg1_t *const* regss, void *km, int opt_flag, FILE **aebFp, FILE **aibFp, int numOutChunks, int numMaxChunks, int maxChunkSize, char *prefix, vec_fullRec *vfr, vec_otherRec *vor)
+void mm_write_sam2(kstring_t *s, const mm_idx_t *mi, mm_bseq1_t *t, int seg_idx, int reg_idx, int n_seg, const int *n_regss, const mm_reg1_t *const* regss, void *km, int opt_flag, FILE **aebFp, FILE **aibFp, char **aebFileName, char **aibFileName, int numOutChunks, int numMaxChunks, int maxChunkSize, char *prefix, vec_fullRec *vfr, vec_otherRec *vor)
 {
 	const int max_bam_cigar_op = 65535;
 	int flag, n_regs = n_regss[seg_idx], cigar_in_tag = 0;
@@ -545,12 +545,17 @@ void mm_write_sam2(kstring_t *s, const mm_idx_t *mi, mm_bseq1_t *t, int seg_idx,
 			int fileNo = t->contig*numMaxChunks+(fR.pos-1)/maxChunkSize;
 			t->fileNo = fileNo;
 			assert ((fR.pos-1)/maxChunkSize < numMaxChunks);
-			if (aebFp[fileNo] == NULL)
+			if (aebFileName[fileNo] == NULL)
 			{
 				sprintf (fName, "%s_s%d.aeb", prefix, fileNo);
+				aebFileName[fileNo] = (char *)malloc(500);
+				strcpy (aebFileName[fileNo], fName);
+			}
+			if (aebFp[fileNo] == NULL)
+			{
 //				fprintf (stderr, "PREFIX %s\n", fName);
-				aebFp[fileNo] = fopen (fName, "w");
-				assert (aebFp[fileNo] != NULL);
+				//aebFp[fileNo] = fopen (fName, "w");//ToDo remove comment after ulimit fix
+				//assert (aebFp[fileNo] != NULL);
 			}
 			kv_push_fr (vfr[fileNo], fR);
 //			fwrite (&fR, sizeof(fullRec), 1, aebFp[fileNo]);
@@ -565,12 +570,17 @@ void mm_write_sam2(kstring_t *s, const mm_idx_t *mi, mm_bseq1_t *t, int seg_idx,
 			int fileNo = t->contig*numMaxChunks+(oR.pos-1)/maxChunkSize;
 			t->fileNo = fileNo;
 			assert ((oR.pos-1)/maxChunkSize < numMaxChunks);
-			if (aibFp[fileNo] == NULL)
+			if (aibFileName[fileNo] == NULL)
 			{
 				sprintf (fName, "%s_s%d.aib", prefix, fileNo);
+				aibFileName[fileNo] = (char *)malloc(500);
+				strcpy (aibFileName[fileNo], fName);
+			}
+			if (aibFp[fileNo] == NULL)
+			{
 //				fprintf (stderr, "PREFIX %s\n", fName);
-				aibFp[fileNo] = fopen (fName, "w");
-				assert (aibFp[fileNo] != NULL);
+				//aibFp[fileNo] = fopen (fName, "w");//ToDo remove comment after ulimit fix
+				//assert (aibFp[fileNo] != NULL);
 			}
 			kv_push_or (vor[fileNo], oR);
 //			fwrite (&oR, sizeof(otherRec), 1, aibFp[fileNo]);
@@ -625,5 +635,5 @@ void mm_write_sam(kstring_t *s, const mm_idx_t *mi, const mm_bseq1_t *t, const m
 	int i;
 	for (i = 0; i < n_regs; ++i)
 		if (r == &regs[i]) break;
-	mm_write_sam2(s, mi, t, 0, i, 1, &n_regs, &regs, NULL, 0, NULL, NULL, 0, 0, 0, NULL, NULL, NULL);
+	mm_write_sam2(s, mi, t, 0, i, 1, &n_regs, &regs, NULL, 0, NULL, NULL,  NULL, NULL, 0, 0, 0, NULL, NULL, NULL);
 }

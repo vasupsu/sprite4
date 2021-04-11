@@ -445,6 +445,8 @@ typedef struct {
 	int cur_chunk, end_chunk;
 	FILE **aebFp;
 	FILE **aibFp;
+	char **aebFileName;
+	char **aibFileName;
 	int numOutChunks, numMaxChunks, maxChunkSize;
 	char *oPrefix;
 } pipeline_t;
@@ -499,8 +501,8 @@ static void *worker_pipeline(void *shared, int step, void *in)
 {
 	int i, j, k;
     pipeline_t *p = (pipeline_t*)shared;
-//    double sTime = realtime();
-//    double sTime_cpu = cputime();
+    double sTime = realtime();
+    double sTime_cpu = cputime();
     if (step == 0) { // step 0: read sequences
 		int with_qual = (!!(p->opt->flag & MM_F_OUT_SAM) && !(p->opt->flag & MM_F_NO_QUAL));
 		int frag_mode = (p->n_fp > 1 || !!(p->opt->flag & MM_F_FRAG_MODE));
@@ -508,8 +510,8 @@ static void *worker_pipeline(void *shared, int step, void *in)
         s = (step_t*)calloc(1, sizeof(step_t));
 		#pragma omp critical (read_lock)
 		{
-//			sTime = realtime();
-//			sTime_cpu = cputime();
+			sTime = realtime();
+			sTime_cpu = cputime();
 			if (p->n_fp > 1) s->seq = mm_bseq_read_frag(p->n_fp, p->fp, p->mini_batch_size, with_qual, &s->n_seq, p->fI[p->end_chunk].offset);
 			else s->seq = mm_bseq_read2(p->fp[0], p->mini_batch_size, with_qual, frag_mode, &s->n_seq, p->fI[p->end_chunk].offset);
 		}
@@ -533,23 +535,23 @@ static void *worker_pipeline(void *shared, int step, void *in)
 					s->seg_off[s->n_frag++] = j;
 					j = i;
 				}
-//     			fprintf (stderr, "%d\t1-worker_pipeline step %d real %.3lf sec cpu %.3lf sec\n",  p->rank, step, realtime()-sTime, cputime()-sTime_cpu);
+     			fprintf (stderr, "%d\t1-worker_pipeline step %d real %.3lf sec cpu %.3lf sec\n",  p->rank, step, realtime()-sTime, cputime()-sTime_cpu);
 			return s;
 		} else free(s);
     } else if (step == 1) { // step 1: map
 		#pragma omp critical (map_lock)
 		{
-//			sTime = realtime();
-//			sTime_cpu = cputime();
+			sTime = realtime();
+			sTime_cpu = cputime();
 			kt_for(p->n_threads, worker_for, in, ((step_t*)in)->n_frag);
 		}
-//		fprintf (stderr, "%d\t2-worker_pipeline step %d real %.3lf sec cpu %.3lf sec\n",  p->rank, step, realtime()-sTime, cputime()-sTime_cpu);
+		fprintf (stderr, "%d\t2-worker_pipeline step %d real %.3lf sec cpu %.3lf sec\n",  p->rank, step, realtime()-sTime, cputime()-sTime_cpu);
 		return in;
     } else if (step == 2) { // step 2: output
 		#pragma omp critical (write_lock)
 		{
-//			sTime = realtime();
-//			sTime_cpu = cputime();
+			sTime = realtime();
+			sTime_cpu = cputime();
 			void *km = 0;
 	        step_t *s = (step_t*)in;
 			const mm_idx_t *mi = p->mi;
@@ -570,14 +572,14 @@ static void *worker_pipeline(void *shared, int step, void *in)
 						if ((p->opt->flag & MM_F_NO_PRINT_2ND) && r->id != r->parent)
 							continue;
 						if (p->opt->flag & MM_F_OUT_SAM)
-							mm_write_sam2(&p->str, mi, t, i - seg_st, j, s->n_seg[k], &s->n_reg[seg_st], (const mm_reg1_t*const*)&s->reg[seg_st], km, p->opt->flag, p->aebFp, p->aibFp, p->numOutChunks, p->numMaxChunks, p->maxChunkSize, p->oPrefix, vfr, vor);
+							mm_write_sam2(&p->str, mi, t, i - seg_st, j, s->n_seg[k], &s->n_reg[seg_st], (const mm_reg1_t*const*)&s->reg[seg_st], km, p->opt->flag, p->aebFp, p->aibFp, p->aebFileName, p->aibFileName, p->numOutChunks, p->numMaxChunks, p->maxChunkSize, p->oPrefix, vfr, vor);
 						else
 							mm_write_paf(&p->str, mi, t, r, km, p->opt->flag);
 	//					printf ("c%df%d\t", t->contig, t->fileNo);
 	//					puts(p->str.s);
 					}
 					if (s->n_reg[i] == 0 && (p->opt->flag & MM_F_OUT_SAM)) {
-						mm_write_sam2(&p->str, mi, t, i - seg_st, -1, s->n_seg[k], &s->n_reg[seg_st], (const mm_reg1_t*const*)&s->reg[seg_st], km, p->opt->flag, p->aebFp, p->aibFp, p->numOutChunks, p->numMaxChunks, p->maxChunkSize, p->oPrefix, vfr, vor);
+						mm_write_sam2(&p->str, mi, t, i - seg_st, -1, s->n_seg[k], &s->n_reg[seg_st], (const mm_reg1_t*const*)&s->reg[seg_st], km, p->opt->flag, p->aebFp, p->aibFp,  p->aebFileName, p->aibFileName, p->numOutChunks, p->numMaxChunks, p->maxChunkSize, p->oPrefix, vfr, vor);
 	//					printf ("c%df%d\t", t->contig, t->fileNo);
 	//					puts(p->str.s);
 					}
@@ -594,18 +596,34 @@ static void *worker_pipeline(void *shared, int step, void *in)
 			{
 				if (vfr[i].m > 0) 
 				{
-					fwrite (vfr[i].a, sizeof(fullRec), vfr[i].n, p->aebFp[i]);
+					if (p->aebFp[i] == NULL) {
+						assert (p->aebFileName[i] != NULL);
+						p->aebFp[i] = fopen(p->aebFileName[i], "ab");
+						fwrite (vfr[i].a, sizeof(fullRec), vfr[i].n, p->aebFp[i]);
+						fclose (p->aebFp[i]);
+						p->aebFp[i] = NULL;
+					}
+					else
+						fwrite (vfr[i].a, sizeof(fullRec), vfr[i].n, p->aebFp[i]);
 					free (vfr[i].a);
 				}
 				if (vor[i].m > 0) 
 				{
-					fwrite (vor[i].a, sizeof(otherRec), vor[i].n, p->aibFp[i]);
+					if (p->aibFp[i] == NULL) {
+						assert (p->aibFileName[i] != NULL);
+						p->aibFp[i] = fopen(p->aibFileName[i], "ab");
+						fwrite (vor[i].a, sizeof(otherRec), vor[i].n, p->aibFp[i]);
+						fclose (p->aibFp[i]);
+						p->aibFp[i] = NULL;
+					}
+					else
+						fwrite (vor[i].a, sizeof(otherRec), vor[i].n, p->aibFp[i]);
 					free (vor[i].a);
 				}
 			}
 			free (vfr); free (vor);
 			km_destroy(km);
-//	 		fprintf (stderr, "%d\t3-worker_pipeline step %d real %.3lf sec cpu %.3lf sec\n",  p->rank, step, realtime()-sTime, cputime()-sTime_cpu);
+	 		fprintf (stderr, "%d\t3-worker_pipeline step %d real %.3lf sec cpu %.3lf sec\n",  p->rank, step, realtime()-sTime, cputime()-sTime_cpu);
 			if (mm_verbose >= 3)
 				fprintf(stderr, "[%d,%d:M::%s::%.3f*%.2f] mapped %d sequences\n", p->rank, p->cur_chunk, __func__, realtime() - mm_realtime0, cputime() / (realtime() - mm_realtime0), s->n_seq);
 			free(s);
@@ -614,7 +632,7 @@ static void *worker_pipeline(void *shared, int step, void *in)
     return 0;
 }
 
-int mm_map_file_frag(const mm_idx_t *idx, int n_segs, const char **fn, const mm_mapopt_t *opt, int n_threads, int numTasks, int rank, char *prefix, int maxChunkSize, int numOutChunks, int numMaxChunks, FILE **aebFp, FILE **aibFp)
+int mm_map_file_frag(const mm_idx_t *idx, int n_segs, const char **fn, const mm_mapopt_t *opt, int n_threads, int numTasks, int rank, char *prefix, int maxChunkSize, int numOutChunks, int numMaxChunks, FILE **aebFp, FILE **aibFp, char **aebFileName, char **aibFileName)
 {
 //	int numtasks = 2, rank=0;
 
@@ -626,6 +644,8 @@ int mm_map_file_frag(const mm_idx_t *idx, int n_segs, const char **fn, const mm_
 	pl.fp = (mm_bseq_file_t**)calloc(n_segs, sizeof(mm_bseq_file_t*));
 	pl.aebFp = aebFp;
 	pl.aibFp = aibFp;
+	pl.aebFileName = aebFileName;
+	pl.aibFileName = aibFileName;
 	pl.maxChunkSize = maxChunkSize;
 	pl.numOutChunks = numOutChunks;
 	pl.numMaxChunks = numMaxChunks;
@@ -694,7 +714,7 @@ int mm_map_file_frag(const mm_idx_t *idx, int n_segs, const char **fn, const mm_
 	return 0;
 }
 
-int mm_map_file(const mm_idx_t *idx, const char *fn, const mm_mapopt_t *opt, int n_threads, int numTasks, int rank, char *prefix, int maxChunkSize, int numOutChunks, int numMaxChunks, FILE **aebFp, FILE **aibFp)
+int mm_map_file(const mm_idx_t *idx, const char *fn, const mm_mapopt_t *opt, int n_threads, int numTasks, int rank, char *prefix, int maxChunkSize, int numOutChunks, int numMaxChunks, FILE **aebFp, FILE **aibFp, char **aebFileName, char **aibFileName)
 {
-	return mm_map_file_frag(idx, 1, &fn, opt, n_threads, numTasks, rank, prefix, maxChunkSize, numOutChunks, numMaxChunks, aebFp, aibFp);
+	return mm_map_file_frag(idx, 1, &fn, opt, n_threads, numTasks, rank, prefix, maxChunkSize, numOutChunks, numMaxChunks, aebFp, aibFp, aebFileName, aibFileName);
 }
