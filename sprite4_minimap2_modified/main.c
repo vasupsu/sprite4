@@ -396,7 +396,7 @@ int main(int argc, char *argv[])
 	fprintf(stderr, "\n[M::%s] Real time: %.3f sec; CPU: %.3f sec\n", __func__, realtime() - mm_realtime0, cputime());
 #ifdef USE_MPI
         MPI_Barrier(MPI_COMM_WORLD);
-/*        if (rank == 0)
+        if (rank == 0)
         {
                 int pid = getpid();
                 char line[2048];
@@ -413,7 +413,7 @@ int main(int argc, char *argv[])
                         fgets (line, 2048, statFile);
                 }
                 fclose (statFile);
-        }*/
+        }
         MPI_Finalize();
 #endif
 	return 0;
