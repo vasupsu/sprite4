@@ -234,7 +234,7 @@ split_aebaib()
         int minPos = -1, minChunk =-1;
         int maxPos = 0/*, maxChunk = -1*/;
         int lastPos = 0;
-        if (i > 24) break;
+        //if (i > 24) break;
         for (int j=0; j<numMaxChunks; j++)
         {
             char fname[10000];
@@ -324,7 +324,7 @@ bam_streamer::
 split_aebaib3()
 {
     const bam_hdr_t &bhdr = get_header();
-    size_t rSize = 100000;
+    size_t rSize = 1000000;
 //    std::cout << "split_aebaib3\n";
 /*    size_t *numAebRecs = (size_t *)calloc (nContigs*numMaxChunks, sizeof(size_t));
     size_t *numAibRecs = (size_t *)calloc (nContigs*numMaxChunks, sizeof(size_t));
@@ -444,7 +444,7 @@ split_aebaib2()
         int minPos = -1, minChunk =-1;
         int maxPos = 0/*, maxChunk = -1*/;
         int lastPos = 0;
-        if (i > 24) break;
+        //if (i > 24) break;
         for (int j=0; j<numMaxChunks; j++)
         {
             char fname[10000];
@@ -748,8 +748,8 @@ size_t bam_streamer::getFirstRecordIndexForRange (FILE *fp, int isaibfile, size_
             l = m+1;
         }
         iter++;
-        if (iter > 25)
-            break;
+        //if (iter > 25)
+        //    break;
     }
     if (l != 0)
     {
@@ -1050,7 +1050,7 @@ next()
             {
 		gettimeofday (&stime, NULL);
 //                std::cout << "aebread start\n";
-                total_aeb_rec = fread (fR, sizeof(fullRec), 1000, _aeb_fp);
+                total_aeb_rec = fread (fR, sizeof(fullRec), 10000, _aeb_fp);
                 gettimeofday (&etime, NULL);
 //                long elapsed = (etime.tv_sec * 1000000 + etime.tv_usec) - (stime.tv_sec * 1000000 + stime.tv_usec);
 //                std::cout << "aebread end" << (double)elapsed/1000000 << "\n";
@@ -1067,7 +1067,7 @@ next()
             {
 		gettimeofday (&stime, NULL);
 //                std::cout << "aibread start\n";
-                total_aib_rec = fread (oR, sizeof(otherRec), 1000, _aib_fp);
+                total_aib_rec = fread (oR, sizeof(otherRec), 10000, _aib_fp);
                 gettimeofday (&etime, NULL);
 //                long elapsed = (etime.tv_sec * 1000000 + etime.tv_usec) - (stime.tv_sec * 1000000 + stime.tv_usec);
 //                std::cout << "aibread end" << (double)elapsed/1000000 << "\n";
@@ -1089,10 +1089,10 @@ next()
             {
                 char fname[10000];
                 sprintf (fname, "%s/C%d_%d_sorted.aeb", aebaib_prefix.c_str(), curTid, startFile);
-        //        std::cout << "AEB: " << fname << std::endl;
+//                std::cout << "AEB: " << fname << std::endl;
                 _aeb_fp = fopen (fname, "rb");
                 sprintf (fname, "%s/C%d_%d_sorted.aib", aebaib_prefix.c_str(), curTid, startFile);
-        //        std::cout << "AIB: " << fname << std::endl;
+//                std::cout << "AIB: " << fname << std::endl;
                 _aib_fp = fopen (fname, "rb");
                 if ((_aeb_fp == NULL) && (_aib_fp == NULL))
                	    startFile++;

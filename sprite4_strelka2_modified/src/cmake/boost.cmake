@@ -45,6 +45,8 @@ macro (initBoostParams)
     set (THIS_BOOST_BUILD_COMPONENTS filesystem program_options serialization
                                      system timer chrono test)
     set (Boost_USE_STATIC_LIBS ON)
+    set (Boost_NO_SYSTEM_PATHS ON)
+    set (Boost_NO_BOOST_CMAKE ON)
     if (NOT WIN32)
         # bjam on windows ignores this setting so skip for win32:
         set (Boost_USE_MULTITHREADED OFF)

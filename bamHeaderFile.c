@@ -44,7 +44,7 @@ unsigned char seq_nt4_table[256] = {
 
 void aeb2bam (bam1_t *b, int pos, int matchLen, char *charseq, int curTid, bam_hdr_t *hdr, samFile *fpOut)
 {
-	uint8_t seq[60], quals[500];
+	uint8_t seq[150], quals[500];
 	uint8_t bToInt[5] = {1, 2, 4, 8, 15};
         bam1_core_t *c = &b->core;
         uint8_t *curData = b->data;
@@ -167,14 +167,13 @@ int main(int argc, char **argv)
 	int contigNo=0;
 	char contigName[100];
 	long length=0,start=0;
-	kstring_t str;
+	kstring_t str = { 0, 0, NULL };
 	char tStr[200];
 	fp_fai = fopen(fai_file, "r");
 	fgets(line, 200, fp_fai);
 	while (!feof(fp_fai))
 	{
 		sscanf(line, "%s\t%ld\t%ld", contigName, &length, &start);
-//		printf ("%s\t%ld\t%ld\n", contigName, length, start);
 		offsets[contigNo] = start;
 		lengths[contigNo] = length;
 		sprintf (tStr, "@SQ\tSN:%s\tLN:%d\n", contigName, length);

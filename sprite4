@@ -38,7 +38,6 @@ command: idx         create index for FASTQ file
          sampa       parallel in-memory sort
          parsnip     call SNPs in simple reference regions; extract complex alignment records
          varcall     call SNPs, INDELs using sampa/parsnip output
-         mergevcf    combine vcf files created by parsnip and varcall steps
 
 options: -h       show this message
 "
@@ -113,6 +112,7 @@ positional args:
 
 options:
          -p INT    Number of processes [1]
+         -m STR    Comma separated list of hostnames 
          -t INT    Number of threads per process [1]
          -s INT    Max. Number of reference regions [500]. Separate output files created for each region.
          -o STR    Path for output files [./sprite4out]
@@ -126,17 +126,13 @@ options:
 		map_usage
 		exit 1
 	fi
-	if ! test  -x $MAP
-	then
-		echo "$MAP not present!!!"
-		exit 1
-	fi
 
 	MAP_P=1
 	MAP_T=1
 	MAP_OPT=""
 	MAP_OUT_DIR="./sprite4out"
-	while getopts "hvp:t:s:o:" OPTION
+	HOSTNAMES=""
+	while getopts "hvp:t:s:o:m:" OPTION
 	do
 		case $OPTION in
 			h)
@@ -159,12 +155,20 @@ options:
 			o)
 			MAP_OUT_DIR="$OPTARG"
 			;;
+			m)
+			HOSTNAMES=$OPTARG
+			;;
 			*)
         		echo -e "Error: map option not recognized\n"
 			exit 1
 			;;
 		esac
 	done
+	if ! test  -x $MAP
+	then
+		echo "$MAP not present!!!"
+		exit 1
+	fi
 	FILE_STRING="${@:$((${OPTIND}))}"
 	FASTQ_STRING="${@:$((${OPTIND}+1))}"
 	FILE_LIST=($FILE_STRING)
@@ -199,18 +203,36 @@ options:
 		echo "Creating fasta index $IDXFILE..."
 		$MAP -d $IDXFILE ${FILE_LIST[0]}
 	fi
-	for i in `seq 0 $(($MAP_P-1))`
-	do
-		CMD="mkdir -p $MAP_OUT_DIR/tmp${i}"
-		$CMD
-		for j in `ls $MAP_OUT_DIR/tmp${i}`
+	if ! test -z $MPIRUN -a ! test -z $HOSTNAMES
+	then
+		for i in `seq 0 $(($MAP_P-1))`
 		do
-			rm $MAP_OUT_DIR/tmp${i}/$j
+			CMD="$MPIRUN -hosts  $HOSTNAMES rm -rf $MAP_OUT_DIR/tmp${i}"
+			echo $CMD
+			$CMD
+			CMD="$MPIRUN -hosts  $HOSTNAMES mkdir -p $MAP_OUT_DIR/tmp${i}"
+			echo $CMD
+			$CMD
 		done
-	done
+	else
+		for i in `seq 0 $(($MAP_P-1))`
+		do
+			CMD="mkdir -p $MAP_OUT_DIR/tmp${i}"
+			$CMD
+			for j in `ls $MAP_OUT_DIR/tmp${i}`
+			do
+				rm $MAP_OUT_DIR/tmp${i}/$j
+			done
+		done
+	fi
 	if ! test -z $MPIRUN
 	then
-		CMD="$MPIRUN -np $MAP_P $MAP -ax sr $MAP_OPT -o $MAP_OUT_DIR/tmp $IDXFILE $FASTQ_STRING"
+		if [ -z $HOSTNAMES ]
+		then
+			CMD="$MPIRUN -np $MAP_P $MAP -ax sr $MAP_OPT -o $MAP_OUT_DIR/tmp $IDXFILE $FASTQ_STRING"
+		else
+			CMD="$MPIRUN -np $MAP_P -hosts  $HOSTNAMES $MAP -ax sr $MAP_OPT -o $MAP_OUT_DIR/tmp $IDXFILE $FASTQ_STRING"
+		fi
 	else
 		CMD="$MAP -ax sr $MAP_OPT -o $MAP_OUT_DIR/tmp $IDXFILE $FASTQ_STRING"
 	fi
@@ -555,8 +577,8 @@ options:
 		echo "CMD=\"$CHROMDEPTH --align-file ${MAP_OUT_DIR}/empty.bam --ref $FASTAFILE --chrom \$i  --aln-prefix ${MAP_OUT_DIR}/tmp0 --max-ref-segs $MAP_OUT_SEGS\""
 		echo "\$CMD >> ${MAP_OUT_DIR}/chromDepth.tsv"
 		echo "done"
-		echo "GENOME_SIZE=`awk '{sum+=\$2} END {print sum}' $IDXFILE`"
-		GENOME_SIZE=`awk '{sum+=$2} END {print sum}' $IDXFILE`
+		echo "GENOME_SIZE=`awk 'BEGIN{sum=0} {sum+=\$2} END {printf "%.f\n",sum}' $IDXFILE`"
+		GENOME_SIZE=`awk 'BEGIN{sum=0} {sum+=$2} END {printf "%.f\n",sum}' $IDXFILE`
 	else
 		$CMD1
 		$CMD2
@@ -579,19 +601,22 @@ options:
 		STRELKA_CMD=$VARCALL
 	fi
 
-	for i in `awk '{print $1":1-"$2}' $IDXFILE`
-	do
-		STRELKA_CMD="$STRELKA_CMD --region $i"
-	done
+	#for i in `awk '{print $1":1-"$2}' $IDXFILE`
+	#do
+	#	STRELKA_CMD="$STRELKA_CMD --region $i"
+	#done
 	STRELKA_CMD="$STRELKA_CMD --ref $FASTAFILE -genome-size $GENOME_SIZE -max-indel-size 50 -min-mapping-quality 20 -max-window-mismatch 2 20 "
-	STRELKA_CMD="$STRELKA_CMD --gvcf-output-prefix ${MAP_OUT_DIR}/sprite4. --gvcf-min-gqx 15 --gvcf-min-homref-gqx 15 --gvcf-max-snv-strand-bias 10 -min-qscore 17 -bsnp-ssd-no-mismatch 0.35 -bsnp-ssd-one-mismatch 0.6 -min-vexp 0.25 --enable-read-backed-phasing --stats-file ${MAP_OUT_DIR} --snv-scoring-model-file ${STRELKA_HOME}/share/config/germlineSNVScoringModels.json --indel-scoring-model-file ${STRELKA_HOME}/share/config/germlineIndelScoringModels.json --align-file ${MAP_OUT_DIR}/empty.bam --indel-error-models-file ${STRELKA_HOME}/share/config/indelErrorModel.json --theta-file ${STRELKA_HOME}/share/config/theta.json --chrom-depth-file ${MAP_OUT_DIR}/chromDepth.tsv --aln-prefix ${MAP_OUT_DIR}/tmp0 --max-ref-segs $MAP_OUT_SEGS"
+	STRELKA_CMD="$STRELKA_CMD --gvcf-output-prefix ${MAP_OUT_DIR}/sprite4. --gvcf-min-gqx 15 --gvcf-min-homref-gqx 15 --gvcf-max-snv-strand-bias 10 -min-qscore 17 -bsnp-ssd-no-mismatch 0.35 -bsnp-ssd-one-mismatch 0.6 -min-vexp 0.25 --enable-read-backed-phasing --stats-file ${MAP_OUT_DIR} --snv-scoring-model-file ${STRELKA_HOME}/share/config/germlineSNVScoringModels.json --indel-scoring-model-file ${STRELKA_HOME}/share/config/germlineIndelScoringModels.json --align-file ${MAP_OUT_DIR}/empty.bam --indel-error-models-file ${STRELKA_HOME}/share/config/indelErrorModel.json --theta-file ${STRELKA_HOME}/share/config/theta.json --chrom-depth-file ${MAP_OUT_DIR}/chromDepth.tsv --aln-prefix ${MAP_OUT_DIR}/tmp0 --max-ref-segs $MAP_OUT_SEGS --max-input-depth 1000"
+	MERGE_VCF_CMD="grep '#' ${MAP_OUT_DIR}/sprite4.variants.vcf > ${MAP_OUT_DIR}/sprite4.variants.sorted.vcf; grep -v '#' ${MAP_OUT_DIR}/sprite4.variants.vcf | sort -k1,1 -k2,2n >> ${MAP_OUT_DIR}/sprite4.variants.sorted.vcf"
         if ! test -z $PRINTONLY
         then
                 echo $STRELKA_CMD
-		echo
+		echo $MERGE_VCF_CMD
         else
-#                echo $STRELKA_CMD
+                echo $STRELKA_CMD
 		$STRELKA_CMD
+		echo $MERGE_VCF_CMD
+		$MERGE_VCF_CMD
 		echo "Done"
         fi
 }
@@ -721,9 +746,6 @@ case "$1" in
 	;;
     'varcall')
 	varcall ${@:2}
-	;;
-    'mergevcf')
-	mergevcf ${@:2}
 	;;
     *)
         usage

@@ -366,11 +366,16 @@ int main(int argc, char *argv[])
                 assert (aebFp != NULL);
 		FILE **aibFp = (FILE **)calloc ((numMaxChunks * mi->n_seq), sizeof (FILE *));
                 assert (aibFp != NULL);
+		//ToDo Remove after ulimit fix
+		char **aebFileName = (char **)calloc ((numMaxChunks * mi->n_seq), sizeof(char *));
+		assert (aebFileName != NULL);
+		char **aibFileName = (char **)calloc ((numMaxChunks * mi->n_seq), sizeof(char *));
+		assert (aibFileName != NULL);
 		if (!(opt.flag & MM_F_FRAG_MODE)) {
 			for (i = optind + 1; i < argc; ++i)
-				mm_map_file(mi, argv[i], &opt, n_threads, numTasks, rank, fileName, maxChunkSize, numOutChunks, numMaxChunks, aebFp, aibFp);
+				mm_map_file(mi, argv[i], &opt, n_threads, numTasks, rank, fileName, maxChunkSize, numOutChunks, numMaxChunks, aebFp, aibFp, aebFileName, aibFileName);
 		} else {
-			mm_map_file_frag(mi, argc - (optind + 1), (const char**)&argv[optind + 1], &opt, n_threads, numTasks, rank, fileName, maxChunkSize, numOutChunks, numMaxChunks, aebFp, aibFp);
+			mm_map_file_frag(mi, argc - (optind + 1), (const char**)&argv[optind + 1], &opt, n_threads, numTasks, rank, fileName, maxChunkSize, numOutChunks, numMaxChunks, aebFp, aibFp, aebFileName, aibFileName);
 		}
 		mm_idx_destroy(mi);
 		for (i=0; i<numMaxChunks * mi->n_seq; i++)
@@ -385,7 +390,19 @@ int main(int argc, char *argv[])
 				fclose (aibFp[i]);
 				aibFp[i] = NULL;
 			}
+			if (aebFileName[i] != NULL) {
+				free (aebFileName[i]);
+				aebFileName[i] = NULL;
+			}
+			if (aibFileName[i] != NULL) {
+				free (aibFileName[i]);
+				aibFileName[i] = NULL;
+			}
 		}
+		free (aebFp);
+		free (aibFp);
+		free (aebFileName);
+		free (aibFileName);
 	}
 	mm_idx_reader_close(idx_rdr);
 
@@ -415,6 +432,22 @@ int main(int argc, char *argv[])
                 fclose (statFile);
         }
         MPI_Finalize();
+#else
+        int pid = getpid();
+        char line[2048];
+        sprintf (line, "/proc/%d/status", pid);
+        FILE *statFile = fopen(line, "r");
+        assert (statFile != NULL);
+        fgets (line, 2048, statFile);
+        while (!feof (statFile))
+        {
+                if (strstr(line,"VmPeak") || strstr(line,"VmHWM"))
+                {
+                        fprintf (stderr, "[%d] %s", rank, line);
+                }
+                fgets (line, 2048, statFile);
+        }
+        fclose (statFile);
 #endif
 	return 0;
 }

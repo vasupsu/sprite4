@@ -35,8 +35,8 @@
 typedef struct
 {
 	uint32_t pos;
-	uint8_t seq[60];
-	uint8_t quals[120];
+	uint8_t seq[150];
+	uint8_t quals[300];
 	uint16_t flag;
 	uint8_t qual;
 	uint8_t  matchLen;
@@ -46,8 +46,8 @@ typedef struct
 {
 	uint32_t pos;
 	uint16_t flag;
-	uint8_t seq[60];
-	uint8_t quals[120];
+	uint8_t seq[150];
+	uint8_t quals[300];
 	uint8_t qual;
 	uint8_t n_cigar;
 	uint16_t cigar[10];
