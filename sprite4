@@ -29,7 +29,7 @@ function usage() {
 	echo "
 Program: sprite4
 Version: 1.0
-Author: Vasudevan Rengasamy (vxr162@psu.edu)
+Author: Vasudevan Rengasamy (vas.renga@gmail.com)
 
 usage:   sprite4 <command> [options]
 
@@ -112,7 +112,7 @@ positional args:
 
 options:
          -p INT    Number of processes [1]
-         -m STR    Comma separated list of hostnames 
+         -m STR    Comma separated list of hostnames
          -t INT    Number of threads per process [1]
          -s INT    Max. Number of reference regions [500]. Separate output files created for each region.
          -o STR    Path for output files [./sprite4out]
@@ -207,10 +207,10 @@ options:
 	then
 		for i in `seq 0 $(($MAP_P-1))`
 		do
-			CMD="$MPIRUN -hosts  $HOSTNAMES rm -rf $MAP_OUT_DIR/tmp${i}"
+			CMD="$MPIRUN -prepend-rank -hosts  $HOSTNAMES rm -rf $MAP_OUT_DIR/tmp${i}"
 			echo $CMD
 			$CMD
-			CMD="$MPIRUN -hosts  $HOSTNAMES mkdir -p $MAP_OUT_DIR/tmp${i}"
+			CMD="$MPIRUN -prepend-rank -hosts  $HOSTNAMES mkdir -p $MAP_OUT_DIR/tmp${i}"
 			echo $CMD
 			$CMD
 		done
@@ -231,7 +231,7 @@ options:
 		then
 			CMD="$MPIRUN -np $MAP_P $MAP -ax sr $MAP_OPT -o $MAP_OUT_DIR/tmp $IDXFILE $FASTQ_STRING"
 		else
-			CMD="$MPIRUN -np $MAP_P -hosts  $HOSTNAMES $MAP -ax sr $MAP_OPT -o $MAP_OUT_DIR/tmp $IDXFILE $FASTQ_STRING"
+			CMD="$MPIRUN -np $MAP_P -prepend-rank -hosts  $HOSTNAMES $MAP -ax sr $MAP_OPT -o $MAP_OUT_DIR/tmp $IDXFILE $FASTQ_STRING"
 		fi
 	else
 		CMD="$MAP -ax sr $MAP_OPT -o $MAP_OUT_DIR/tmp $IDXFILE $FASTQ_STRING"
@@ -259,6 +259,7 @@ positional args:
 options:
          -p INT    Number of processes [1]
          -t INT    Number of threads per process [1]
+         -m STR    Comma separated list of hostnames
          -s INT    Max. Number of reference regions used in MAP step [500]
          -P INT    Number of processes used in MAP step [1]
          -o STR    Path for output files used in MAP step [./sprite4out]
@@ -282,7 +283,8 @@ options:
 	SAMPA_T=1
         MAP_OUT_SEGS=500
 	MAP_OUT_DIR="./sprite4out"
-	while getopts "hvp:t:s:o:P:" OPTION
+	HOSTNAMES=""
+	while getopts "hvp:t:s:o:P:m:" OPTION
 	do
 		case $OPTION in
 			h)
@@ -306,6 +308,9 @@ options:
 			;;
 			P)
 			MAP_P=$OPTARG
+			;;
+			m)
+			HOSTNAMES=$OPTARG
 			;;
 			*)
         		echo -e "Error: sampa option not recognized\n"
@@ -349,7 +354,12 @@ options:
 #	echo "faidx file: $IDXFILE"
 	if ! test -z $MPIRUN
 	then
-		CMD="$MPIRUN -np $SAMPA_P $SAMPA -t $SAMPA_T $MAP_OUT_SEGS $IDXFILE $MAP_OUT_DIR/tmp $MAP_P"
+		if [ -z $HOSTNAMES ]
+		then
+			CMD="$MPIRUN -np $SAMPA_P $SAMPA -t $SAMPA_T $MAP_OUT_SEGS $IDXFILE $MAP_OUT_DIR/tmp $MAP_P"
+		else
+			CMD="$MPIRUN -prepend-rank -hosts $HOSTNAMES -np $SAMPA_P $SAMPA -t $SAMPA_T $MAP_OUT_SEGS $IDXFILE $MAP_OUT_DIR/tmp $MAP_P"
+		fi
 	else
 		CMD="$SAMPA -t $SAMPA_T $MAP_OUT_SEGS $IDXFILE $MAP_OUT_DIR/tmp $MAP_P"
 	fi
