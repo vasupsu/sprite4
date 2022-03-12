@@ -497,6 +497,7 @@ positional args:
 
 options:
          -p INT    Number of processes [1]
+         -m STR    Comma separated list of hostnames
          -s INT    Max. Number of reference regions used in MAP step [500]
          -o STR    Path for output files used in MAP step [./sprite4out]
          -v        only prints command without executing step
@@ -504,6 +505,7 @@ options:
 "
 	}
 	PRINTONLY=
+	HOSTNAMES=""
 	if test -z "$1"
 	then
 		varcall_usage
@@ -527,7 +529,7 @@ options:
         MAP_OUT_SEGS=500
 	MAP_OUT_DIR="./sprite4out"
 	VARCALL_P=1
-	while getopts "hvp:t:s:o:" OPTION
+	while getopts "hvp:t:s:o:m:" OPTION
 	do
 		case $OPTION in
 			h)
@@ -545,6 +547,9 @@ options:
 			;;
 			o)
 			MAP_OUT_DIR="$OPTARG"
+			;;
+			m)
+			HOSTNAMES=$OPTARG
 			;;
 			*)
         		echo -e "Error: varcall option not recognized\n"
@@ -596,17 +601,24 @@ options:
 		then
 			rm ${MAP_OUT_DIR}/chromDepth.tsv
 		fi
+		echo Begin GetChromDepth `date`
 		for i in `awk '{print $1}' $IDXFILE`
 		do
 			CMD="$CHROMDEPTH --align-file ${MAP_OUT_DIR}/empty.bam --ref $FASTAFILE --chrom $i  --aln-prefix ${MAP_OUT_DIR}/tmp0 --max-ref-segs $MAP_OUT_SEGS"
 			$CMD >> ${MAP_OUT_DIR}/chromDepth.tsv
 		done
-		GENOME_SIZE=`awk '{sum+=$2} END {print sum}' $IDXFILE`
+		echo End GetChromDepth `date`
+		GENOME_SIZE=`awk 'BEGIN{sum=0} {sum+=$2} END {printf "%.f\n",sum}' $IDXFILE`
 	fi
 
 	if ! test -z $MPIRUN
 	then
-		STRELKA_CMD="$MPIRUN -np $VARCALL_P $VARCALL"
+		if [ -z $HOSTNAMES ]
+		then
+			STRELKA_CMD="$MPIRUN -np $VARCALL_P $VARCALL"
+		else
+			STRELKA_CMD="$MPIRUN -np $VARCALL_P -prepend-rank -hosts $HOSTNAMES $VARCALL"
+		fi
 	else
 		STRELKA_CMD=$VARCALL
 	fi
@@ -623,10 +635,13 @@ options:
                 echo $STRELKA_CMD
 		echo $MERGE_VCF_CMD
         else
+		echo Begin Starling2 `date`
                 echo $STRELKA_CMD
 		$STRELKA_CMD
+		echo End Starling2 `date`
 		echo $MERGE_VCF_CMD
 		$MERGE_VCF_CMD
+		echo End MergeVCF `date`
 		echo "Done"
         fi
 }

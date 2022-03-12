@@ -35,7 +35,8 @@ echo "Compiling minimap2"
 cd sprite4_minimap2_modified; make; cp sprite4-minimap2 genFastqIdx $PREFIX/bin; cd ..
 
 echo "Compiling sampa"
-$CC -o $PREFIX/bin/sampa ${MPIFLAG} -DUSE_OMP sampa.c ${ECFLAG} -fopenmp ${ELFLAG}
+#$CC -o $PREFIX/bin/sampa ${MPIFLAG} -DUSE_OMP sampa.c ${ECFLAG} -fopenmp ${ELFLAG}
+mpicc -o /home/vasudevan/sampa_mpi -DUSE_MPI -DUSE_OMP /home/vasudevan/sampa_mpi.c -static
 
 echo "Compiling Strelka2"
 cd $builddir
